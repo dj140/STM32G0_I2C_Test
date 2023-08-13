@@ -72,9 +72,9 @@ void MX_I2C1_Init(void)
 
   /** I2C Initialization
   */
-  LL_I2C_DisableClockStretching(I2C1);
+  LL_I2C_EnableClockStretching(I2C1);
   I2C_InitStruct.PeripheralMode = LL_I2C_MODE_I2C;
-  I2C_InitStruct.Timing = 0x00901850;
+  I2C_InitStruct.Timing = 0x00C0216C;
   I2C_InitStruct.AnalogFilter = LL_I2C_ANALOGFILTER_ENABLE;
   I2C_InitStruct.DigitalFilter = 0;
   I2C_InitStruct.OwnAddress1 = SLAVE_OWN_ADDRESS;
@@ -85,6 +85,7 @@ void MX_I2C1_Init(void)
   LL_I2C_SetOwnAddress2(I2C1, 0, LL_I2C_OWNADDRESS2_NOMASK);
   LL_I2C_DisableOwnAddress2(I2C1);
   LL_I2C_DisableGeneralCall(I2C1);
+
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* Enable I2C1 address match/error interrupts:
@@ -95,8 +96,10 @@ void MX_I2C1_Init(void)
   */
   LL_I2C_EnableIT_ADDR(I2C1);
   LL_I2C_EnableIT_NACK(I2C1);
-  LL_I2C_EnableIT_ERR(I2C1);
+//  LL_I2C_EnableIT_ERR(I2C1);
   LL_I2C_EnableIT_STOP(I2C1);
+	LL_I2C_EnableIT_RX(I2C1);
+	LL_I2C_EnableIT_TX(I2C1);
   /* USER CODE END I2C1_Init 2 */
 
 }

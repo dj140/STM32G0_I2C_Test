@@ -20,16 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef __MCU_TYPE
-#define __MCU_TYPE
+#ifndef __EXTI_H
+#define __EXTI_H
 
-#include "stm32g0xx.h"
-#include "main.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#define __KEILDUINO__ 280
-#define __STM32__
-#define __STM32F0__
-#define F_CPU                   SystemCoreClock
-#define CYCLES_PER_MICROSECOND  (F_CPU / 1000000U)
+#include "mcu_type.h"
+
+#define EXTI_ChannelPriority_Default 2
+
+#define EXTI_GetLine(Pin)            (1 << Pinx)
+#define EXTI_GetPortSourceGPIOx(Pin) (GPIO_GetPortNum(Pin))
+#define EXTI_GetPinSourcex(Pin)      (GPIO_GetPinNum(Pin))
+
+#define CHANGE  LL_EXTI_TRIGGER_RISING_FALLING
+#define FALLING LL_EXTI_TRIGGER_FALLING
+#define RISING  LL_EXTI_TRIGGER_RISING
+    
+typedef void(*EXTI_CallbackFunction_t)(void);
+    
+void EXTIx_Init(uint8_t Pin, EXTI_CallbackFunction_t function, uint8_t Trigger_Mode, uint8_t ChannelPriority);
+void attachInterrupt(uint8_t Pin, EXTI_CallbackFunction_t function, uint8_t Trigger_Mode);
+void detachInterrupt(uint8_t Pin);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

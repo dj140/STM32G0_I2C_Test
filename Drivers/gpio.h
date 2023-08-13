@@ -28,7 +28,6 @@ extern "C" {
 #endif
 
 #include "mcu_type.h"
-#include "main.h"
 
 #ifndef NULL
 #define NULL 0

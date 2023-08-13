@@ -122,16 +122,16 @@ void PendSV_Handler(void)
 /**
   * @brief This function handles System tick timer.
   */
-void SysTick_Handler(void)
-{
-  /* USER CODE BEGIN SysTick_IRQn 0 */
+//void SysTick_Handler(void)
+//{
+//  /* USER CODE BEGIN SysTick_IRQn 0 */
 
-  /* USER CODE END SysTick_IRQn 0 */
+//  /* USER CODE END SysTick_IRQn 0 */
 
-  /* USER CODE BEGIN SysTick_IRQn 1 */
+//  /* USER CODE BEGIN SysTick_IRQn 1 */
 
-  /* USER CODE END SysTick_IRQn 1 */
-}
+//  /* USER CODE END SysTick_IRQn 1 */
+//}
 
 /******************************************************************************/
 /* STM32G0xx Peripheral Interrupt Handlers                                    */
@@ -145,88 +145,31 @@ void SysTick_Handler(void)
   */
 void I2C1_IRQHandler(void)
 {
-		/* USER CODE BEGIN I2C1_IRQn 0 */
-	/* Check ADDR flag value in ISR register */
-	if (LL_I2C_IsActiveFlag_ADDR(I2C1))
-	{
-		/* Verify the Address Match with the OWN Slave address */
-		if (LL_I2C_GetAddressMatchCode(I2C1) == SLAVE_OWN_ADDRESS)
-		{
-				/* Call function Slave Reception Callback */
-			Address_Matching_Callback();
-			/* Verify the transfer direction, a write direction, Slave enters receiver mode */
-			if (LL_I2C_GetTransferDirection(I2C1) == LL_I2C_DIRECTION_WRITE)
-			{
-				/* Clear ADDR flag value in ISR register */
-				LL_I2C_ClearFlag_ADDR(I2C1);
-
-				/* Enable Receive Interrupt */
-				LL_I2C_EnableIT_RX(I2C1);
-			}
-			else
-			{
-				/* Clear ADDR flag value in ISR register */
-				LL_I2C_ClearFlag_ADDR(I2C1);
-
-				/* Call Error function */
-				Error_Callback();
-			}
-		}
-		else
-		{
-			/* Clear ADDR flag value in ISR register */
-			LL_I2C_ClearFlag_ADDR(I2C1);
-
-			/* Call Error function */
-			Error_Callback();
-		}
-	}
-  /* Check NACK flag value in ISR register */
-  else if (LL_I2C_IsActiveFlag_NACK(I2C1))
-  {
-    /* End of Transfer */
-  LL_I2C_ClearFlag_NACK(I2C1);
-  }
-	/* Check RXNE flag value in ISR register */
-	else if (LL_I2C_IsActiveFlag_RXNE(I2C1))
-	{
-		/* Call function Slave Reception Callback */
-		Slave_Reception_Callback();
-	}
-	else if(LL_I2C_IsActiveFlag_TXIS(I2C1))
-	{
-			/* Call function Slave Sending Callback */
-		Slave_Sending_Callback();
-	}
-	/* Check STOP flag value in ISR register */
-	else if (LL_I2C_IsActiveFlag_STOP(I2C1))
-	{
-		/* End of Transfer */
-		LL_I2C_ClearFlag_STOP(I2C1);
-    /* Check TXE flag value in ISR register */
-    if (!LL_I2C_IsActiveFlag_TXE(I2C1))
-    {
-      /* Flush the TXDR register */
-      LL_I2C_ClearFlag_TXE(I2C1);
+    uint32_t status = I2C1->ISR;
+ 
+    if(status & I2C_ISR_ADDR)
+    {   // I2C1 Address match event occurs
+        LL_I2C_ClearFlag_ADDR(I2C1);
+        Address_Matching_Callback();
     }
-	}
-	  /* Check TXE flag value in ISR register */
-  else if (!LL_I2C_IsActiveFlag_TXE(I2C1))
-  {
-    /* Do nothing */
-    /* This Flag will be set by hardware when the TXDR register is empty */
-    /* If needed, use LL_I2C_ClearFlag_TXE() interface to flush the TXDR register  */
-  }
-	else
-	{
-		/* Call Error function */
-		Error_Callback();
-	}
-		/* USER CODE END I2C1_IRQn 0 */
-
-		/* USER CODE BEGIN I2C1_IRQn 1 */
-
-		/* USER CODE END I2C1_IRQn 1 */
+    else if(status & I2C_ISR_RXNE)
+    {
+        I2C1->ISR |= I2C_ISR_TXE;
+        Slave_Reception_Callback();
+    }
+    else if(status & I2C_ISR_TXIS)
+    {
+        I2C1->ISR |= I2C_ISR_TXE;
+        Slave_Sending_Callback();
+    }
+    else if(status & I2C_ISR_STOPF)
+    {
+			  LL_I2C_ClearFlag_STOP(I2C1);
+		}
+		else if(status & I2C_ISR_NACKF)
+		{
+		    LL_I2C_ClearFlag_NACK(I2C1);
+		}
 }
 
 /* USER CODE BEGIN 1 */

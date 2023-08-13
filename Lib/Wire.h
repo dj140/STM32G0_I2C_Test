@@ -48,11 +48,11 @@
  * pins
  */
 #ifndef SDA_Pin
-#define SDA_Pin PA3
+#define SDA_Pin PA12
 #endif
 
 #ifndef SCL_Pin
-#define SCL_Pin PA2
+#define SCL_Pin PA11
 #endif
 
 #define SOFT_STANDARD 27

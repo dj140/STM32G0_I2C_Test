@@ -23,7 +23,17 @@
 #include "usart.h"
 #include "gpio.h"
 #include "Arduino.h"
+#include "Wire.h"
 
+#define ZT7568_SLAVE_ADDR 0x20
+
+#define RESET_Pin PC6
+#define TP_INT_Pin PB5
+#define TE_IN_Pin PA8
+
+#define Soft_i2C
+
+TwoWire ZT7568(SCL_Pin, SDA_Pin, SOFT_FAST);
 /**
   * @brief Variables related to SlaveReceive process
   */
@@ -106,6 +116,10 @@ void MX_GPIO_Init(void)
 
   /**/
   LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_8, LL_GPIO_MODE_INPUT);
+	
+  /* EXTI interrupt init*/
+  NVIC_SetPriority(EXTI4_15_IRQn, 2);
+  NVIC_EnableIRQ(EXTI4_15_IRQn);
 
   /**/
   GPIO_InitStruct.Pin = LL_GPIO_PIN_6;
@@ -125,6 +139,66 @@ void MX_GPIO_Init(void)
 
 }
 
+void LED_Toogle()
+{
+			  #ifdef HW_i2C			
+			  I2C_Read_nByte(0x20, 0x8000,read_buf, 40);
+	      I2C_Write_nByte(0x20, 0x0300, 0, 0);	
+			  #endif
+			
+        #ifdef Soft_i2C			
+				ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
+				ZT7568.write(0x80);        		
+				ZT7568.write(0x00);        		    		
+				ZT7568.endTransmission(); 
+				delay_us(50);
+			
+				ZT7568.requestFrom(ZT7568_SLAVE_ADDR, 40);    
+			
+				while (ZT7568.available()) 
+				{ 
+						for(uint8_t i = 0; i < 40; i++)
+					{
+					  read_buf[i] = ZT7568.read(); 
+					}
+				}	
+				
+				ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
+				ZT7568.write(0x03);        		
+				ZT7568.write(0x00);        		    		
+				ZT7568.endTransmission(); 
+
+			  #endif		
+				digitalWrite(TP_INT_Pin, LOW);
+        delay(1);
+			  digitalWrite(TP_INT_Pin, HIGH);
+
+}
+/**
+  * @brief This function handles EXTI line 4 to 15 interrupts.
+  */
+extern "C"
+{
+void EXTI4_15_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI4_15_IRQn 0 */
+
+  /* USER CODE END EXTI4_15_IRQn 0 */
+  if (LL_EXTI_IsActiveFallingFlag_0_31(LL_EXTI_LINE_8) != RESET)
+  {
+    LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_8);
+    /* USER CODE BEGIN LL_EXTI_LINE_15_RISING */
+    
+    /* Handle user button press in dedicated function */
+    LED_Toogle(); 
+    /* USER CODE END LL_EXTI_LINE_15_RISING */
+  }
+  /* USER CODE BEGIN EXTI4_15_IRQn 1 */
+
+
+  /* USER CODE END EXTI4_15_IRQn 1 */
+}
+}
 /**
   * @brief  The application entry point.
   * @retval int
@@ -142,7 +216,7 @@ int main(void)
   LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
 
   /* SysTick_IRQn interrupt configuration */
-  NVIC_SetPriority(SysTick_IRQn, 3);
+//  NVIC_SetPriority(SysTick_IRQn, 3);
 
   /* USER CODE BEGIN Init */
 
@@ -150,7 +224,7 @@ int main(void)
 
   /* Configure the system clock */
   SystemClock_Config();
-
+  Delay_Init();
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
@@ -158,11 +232,60 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_I2C1_Init();
-  MX_I2C2_Init();
+//  MX_I2C2_Init();
   MX_USART2_UART_Init();
-  MX_IWDG_Init();
+//  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
+		pinMode(RESET_Pin, OUTPUT);
+		pinMode(TP_INT_Pin, OUTPUT);
+		digitalWrite(TP_INT_Pin, HIGH);
 
+//    pinMode(TE_IN_Pin, INPUT_PULLUP);
+//    attachInterrupt(TE_IN_Pin, LED_Toogle, FALLING);
+	
+	  digitalWrite(RESET_Pin, HIGH);
+		delay(10);
+		digitalWrite(RESET_Pin, LOW);
+		delay(100);
+		digitalWrite(RESET_Pin, HIGH);
+		delay(10);
+  #ifdef Soft_i2C
+	  ZT7568.begin();
+	
+		cmd_buf[0] = 0x01;
+		cmd_buf[1] = 0x00;
+		ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
+		ZT7568.write(0x00);        		
+		ZT7568.write(0xC0);        		
+		ZT7568.write(cmd_buf, 2);        		
+		ZT7568.endTransmission(); 
+		delay(10);
+
+		cmd_buf[0] = 0x01;
+		cmd_buf[1] = 0x00;
+		ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
+		ZT7568.write(0x02);        		
+		ZT7568.write(0xC0);        		
+		ZT7568.write(cmd_buf, 2);        		
+		ZT7568.endTransmission(); 
+		delay(10);
+		
+
+		ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
+		ZT7568.write(0x04);        		
+		ZT7568.write(0xC0);        		
+		ZT7568.endTransmission();
+		delay(10);
+		
+		cmd_buf[0] = 0x01;
+		cmd_buf[1] = 0x00;
+		ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
+		ZT7568.write(0x01);        		
+		ZT7568.write(0xC0);        		
+		ZT7568.write(cmd_buf, 2);        		
+		ZT7568.endTransmission(); 
+		delay(10);
+		#endif
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -170,7 +293,43 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+//			  #ifdef HW_i2C			
+//			  I2C_Read_nByte(0x20, 0x8000,read_buf, 40);
+//	      I2C_Write_nByte(0x20, 0x0300, 0, 0);	
+//			  #endif
+//			
+//        #ifdef Soft_i2C			
+//				ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
+//				ZT7568.write(0x80);        		
+//				ZT7568.write(0x00);        		    		
+//				ZT7568.endTransmission(); 
+//				delay_us(50);
+//			
+//				ZT7568.requestFrom(ZT7568_SLAVE_ADDR, 40);    
+//			
+//				while (ZT7568.available()) 
+//				{ 
+//						for(uint8_t i = 0; i < 40; i++)
+//					{
+//					  read_buf[i] = ZT7568.read(); 
+//					}
+//				}	
+//				
+//				ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
+//				ZT7568.write(0x03);        		
+//				ZT7568.write(0x00);        		    		
+//				ZT7568.endTransmission(); 
 
+//			  #endif		
+//				digitalWrite(TP_INT_Pin, LOW);
+//        delay(1);
+//			  digitalWrite(TP_INT_Pin, HIGH);
+
+				
+//    LL_GPIO_TogglePin(GPIOB, LL_GPIO_PIN_5);
+//    
+//    /* Insert delay 250 ms */
+//    LL_mDelay(16);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -182,8 +341,8 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
-  LL_FLASH_SetLatency(LL_FLASH_LATENCY_1);
-  while(LL_FLASH_GetLatency() != LL_FLASH_LATENCY_1)
+  LL_FLASH_SetLatency(LL_FLASH_LATENCY_2);
+  while(LL_FLASH_GetLatency() != LL_FLASH_LATENCY_2)
   {
   }
 
@@ -193,14 +352,8 @@ void SystemClock_Config(void)
   {
   }
 
-  /* LSI configuration and activation */
-  LL_RCC_LSI_Enable();
-  while(LL_RCC_LSI_IsReady() != 1)
-  {
-  }
-
   /* Main PLL configuration and activation */
-  LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSI, LL_RCC_PLLM_DIV_1, 12, LL_RCC_PLLR_DIV_4);
+  LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSI, LL_RCC_PLLM_DIV_1, 8, LL_RCC_PLLR_DIV_2);
   LL_RCC_PLL_Enable();
   LL_RCC_PLL_EnableDomain_SYS();
   while(LL_RCC_PLL_IsReady() != 1)
@@ -219,10 +372,10 @@ void SystemClock_Config(void)
   /* Set APB1 prescaler*/
   LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
 
-  LL_Init1msTick(48000000);
+  LL_Init1msTick(64000000);
 
   /* Update CMSIS variable (which can be updated also through SystemCoreClockUpdate function) */
-  LL_SetSystemCoreClock(48000000);
+  LL_SetSystemCoreClock(64000000);
 }
 
 /* USER CODE BEGIN 4 */
@@ -357,26 +510,26 @@ void Slave_Reception_Callback(void)
 							//Finger 0 z (strength)
 							Response_Message[4] = read_buf[8] ;
 						}
-//						//Finger 1 event info (touch / event type / hover / palm / event id[0~3])		
-//						if(read_buf[2] == 0x02)		
-//						{							
-//							Response_Message[8] = 0xA2;
-//						}
-//						else
-//						{
-//							Response_Message[8] = 0x22;						
-//						}
-//						//Finger 1 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-//						Response_Message[9] = (read_buf[13] << 4) | (read_buf[11] & 0x0F);					
+						//Finger 1 event info (touch / event type / hover / palm / event id[0~3])		
+						if(read_buf[2] == 0x02)		
+						{							
+							Response_Message[8] = 0xA2;
+						}
+						else
+						{
+							Response_Message[8] = 0x22;						
+						}
+						//Finger 1 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
+						Response_Message[9] = (read_buf[13] << 4) | (read_buf[11] & 0x0F);					
 
-//						//Finger 1 x coordinate (bit 7 ~ bit 0)
-//						Response_Message[10] = read_buf[10] ;
-//					
-//						//Finger 1 y coordinate (bit 7 ~ bit 0)
-//						Response_Message[11] = read_buf[12] ;
+						//Finger 1 x coordinate (bit 7 ~ bit 0)
+						Response_Message[10] = read_buf[10] ;
+					
+						//Finger 1 y coordinate (bit 7 ~ bit 0)
+						Response_Message[11] = read_buf[12] ;
 
-//						//Finger 1 z (strength)
-//						Response_Message[12] = read_buf[14] ;
+						//Finger 1 z (strength)
+						Response_Message[12] = read_buf[14] ;
 					break;
 					default: break;
 	}
@@ -403,19 +556,7 @@ void Slave_Sending_Callback(void)
   */
 void Slave_Complete_Callback(void)
 {
-  /* Check if data request to turn on the LED3 */
-//  if (Buffercmp8((uint8_t *)aReceiveBuffer, (uint8_t *)aLedOn, (ubReceiveIndex - 1)) == 0)
-//  {
-//    /* Turn LED3 On */
-//    /* Expected bytes have been received */
-//    /* Slave Rx sequence completed successfully*/
-////    LED_On();
-//  }
-//  else
-//  {
-//    /* Call Error function */
-//    Error_Callback();
-//  }
+
 }
 
 /**
@@ -426,10 +567,8 @@ void Slave_Complete_Callback(void)
 void Error_Callback(void)
 {
   /* Disable I2C1_IRQn */
-  NVIC_DisableIRQ(I2C1_IRQn);
+//  NVIC_DisableIRQ(I2C1_IRQn);
 
-  /* Unexpected event : Set LED3 to Blinking mode to indicate error occurs */
-//  LED_Blinking(LED_BLINK_ERROR);
 }
 /**
   * @brief  This function is executed in case of error occurrence.

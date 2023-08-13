@@ -34,8 +34,8 @@ extern "C" {
 
 #include "mcu_type.h"
 //#include "adc.h"
-//#include "delay.h"
-//#include "exti.h"
+#include "delay.h"
+#include "exti.h"
 #include "gpio.h"
 //#include "pwm.h"
 //#include "timer.h"

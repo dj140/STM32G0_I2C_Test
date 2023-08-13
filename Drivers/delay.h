@@ -20,16 +20,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#ifndef __MCU_TYPE
-#define __MCU_TYPE
+#ifndef __DELAY_H
+#define __DELAY_H
 
-#include "stm32g0xx.h"
-#include "main.h"
-
-#define __KEILDUINO__ 280
-#define __STM32__
-#define __STM32F0__
-#define F_CPU                   SystemCoreClock
-#define CYCLES_PER_MICROSECOND  (F_CPU / 1000000U)
-
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+#include "mcu_type.h"
+
+void InternalClocks_Init(void);
+void Delay_Init(void);
+uint32_t millis(void);
+uint32_t micros(void);
+void delay_ms(uint32_t ms);
+void delay_us(uint32_t us);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __DELAY_H */
