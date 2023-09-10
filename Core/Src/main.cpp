@@ -25,20 +25,18 @@
 #include "Arduino.h"
 #include "Wire.h"
 
-#define ZT7568_SLAVE_ADDR 0x20
 
 #define RESET_Pin PC6
 #define TP_INT_Pin PB5
 #define TE_IN_Pin PA8
 
-#define Soft_i2C
+//#define Soft_i2C
+#define HW_i2C
 
-TwoWire ZT7568(SCL_Pin, SDA_Pin, SOFT_FAST);
+TwoWire ZT7548(SCL_Pin, SDA_Pin, SOFT_FAST);
 /**
   * @brief Variables related to SlaveReceive process
   */
-uint8_t      aReceiveBuffer[0xF] = {0};
-__IO uint8_t ubReceiveIndex      = 0;
 
 uint8_t  Buffer_Rx_IIC1[40];
 uint8_t  Rx_Idx_IIC1=0;
@@ -139,39 +137,39 @@ void MX_GPIO_Init(void)
 
 }
 
-void LED_Toogle()
+void ZT7548_INT()
 {
-			  #ifdef HW_i2C			
-			  I2C_Read_nByte(0x20, 0x8000,read_buf, 40);
-	      I2C_Write_nByte(0x20, 0x0300, 0, 0);	
-			  #endif
-			
-        #ifdef Soft_i2C			
-				ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
-				ZT7568.write(0x80);        		
-				ZT7568.write(0x00);        		    		
-				ZT7568.endTransmission(); 
-				delay_us(50);
-			
-				ZT7568.requestFrom(ZT7568_SLAVE_ADDR, 40);    
-			
-				while (ZT7568.available()) 
-				{ 
-						for(uint8_t i = 0; i < 40; i++)
-					{
-					  read_buf[i] = ZT7568.read(); 
-					}
-				}	
-				
-				ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
-				ZT7568.write(0x03);        		
-				ZT7568.write(0x00);        		    		
-				ZT7568.endTransmission(); 
+	#ifdef HW_i2C			
+	 I2C_read_reg(I2C2,ZT7548_SLAVE_ADDR,0x8000,read_buf,40);
+	 delay_us(50);
+	 I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0x0300, NULL, NULL);
+	#endif
 
-			  #endif		
-				digitalWrite(TP_INT_Pin, LOW);
-        delay(1);
-			  digitalWrite(TP_INT_Pin, HIGH);
+	#ifdef Soft_i2C			
+	ZT7548.beginTransmission(ZT7548_SLAVE_ADDR); 		
+	ZT7548.write(0x80);        		
+	ZT7548.write(0x00);        		    		
+	ZT7548.endTransmission(); 
+	delay_us(50);
+
+	ZT7548.requestFrom(ZT7548_SLAVE_ADDR, 40);    
+
+	while (ZT7548.available()) 
+	{ 
+			for(uint8_t i = 0; i < 40; i++)
+		{
+			read_buf[i] = ZT7548.read(); 
+		}
+	}	
+	
+	ZT7548.beginTransmission(ZT7548_SLAVE_ADDR); 		
+	ZT7548.write(0x03);        		
+	ZT7548.write(0x00);        		    		
+	ZT7548.endTransmission(); 
+
+	#endif		
+	digitalWrite(TP_INT_Pin, LOW);
+//        delay(1);
 
 }
 /**
@@ -190,7 +188,7 @@ void EXTI4_15_IRQHandler(void)
     /* USER CODE BEGIN LL_EXTI_LINE_15_RISING */
     
     /* Handle user button press in dedicated function */
-    LED_Toogle(); 
+    ZT7548_INT(); 
     /* USER CODE END LL_EXTI_LINE_15_RISING */
   }
   /* USER CODE BEGIN EXTI4_15_IRQn 1 */
@@ -232,58 +230,81 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_I2C1_Init();
-//  MX_I2C2_Init();
+  MX_I2C2_Init();
   MX_USART2_UART_Init();
-//  MX_IWDG_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
-		pinMode(RESET_Pin, OUTPUT);
-		pinMode(TP_INT_Pin, OUTPUT);
-		digitalWrite(TP_INT_Pin, HIGH);
+	pinMode(RESET_Pin, OUTPUT);
+	pinMode(TP_INT_Pin, OUTPUT);
+	digitalWrite(TP_INT_Pin, HIGH);
 
 //    pinMode(TE_IN_Pin, INPUT_PULLUP);
 //    attachInterrupt(TE_IN_Pin, LED_Toogle, FALLING);
+
+	digitalWrite(RESET_Pin, HIGH);
+	delay(10);
+	digitalWrite(RESET_Pin, LOW);
+	delay(100);
+	digitalWrite(RESET_Pin, HIGH);
+	delay(10);
+		
+	#ifdef HW_i2C
+//	  MX_I2C2_Init();
+		
+	cmd_buf[0] = 0x01;
+	cmd_buf[1] = 0x00;
+	I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0x00C0, cmd_buf, 2);
+	delay(10);
 	
-	  digitalWrite(RESET_Pin, HIGH);
-		delay(10);
-		digitalWrite(RESET_Pin, LOW);
-		delay(100);
-		digitalWrite(RESET_Pin, HIGH);
-		delay(10);
+	cmd_buf[0] = 0x01;
+	cmd_buf[1] = 0x00;
+	I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0x02C0, cmd_buf, 2);
+	delay(10);
+	
+	I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0x04C0, NULL, NULL);
+	delay(10);
+	
+	cmd_buf[0] = 0x01;
+	cmd_buf[1] = 0x00;
+	I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0x01C0, cmd_buf, 2);
+	delay(10);		
+		
+  #endif
   #ifdef Soft_i2C
-	  ZT7568.begin();
+	  ZT7548.begin();
 	
-		cmd_buf[0] = 0x01;
-		cmd_buf[1] = 0x00;
-		ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
-		ZT7568.write(0x00);        		
-		ZT7568.write(0xC0);        		
-		ZT7568.write(cmd_buf, 2);        		
-		ZT7568.endTransmission(); 
+		cmd_buf[0] = 0x00;
+		cmd_buf[1] = 0xC0;
+	  cmd_buf[2] = 0x01;
+		cmd_buf[3] = 0x00;
+		ZT7548.beginTransmission(ZT7548_SLAVE_ADDR); 		      		
+		ZT7548.write(cmd_buf, 4);        		
+		ZT7548.endTransmission(); 
 		delay(10);
 
-		cmd_buf[0] = 0x01;
-		cmd_buf[1] = 0x00;
-		ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
-		ZT7568.write(0x02);        		
-		ZT7568.write(0xC0);        		
-		ZT7568.write(cmd_buf, 2);        		
-		ZT7568.endTransmission(); 
+		cmd_buf[0] = 0x02;
+		cmd_buf[1] = 0xC0;
+		cmd_buf[2] = 0x01;
+		cmd_buf[3] = 0x00;
+		ZT7548.beginTransmission(ZT7548_SLAVE_ADDR); 		     		
+		ZT7548.write(cmd_buf, 4);        		
+		ZT7548.endTransmission(); 
 		delay(10);
 		
 
-		ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
-		ZT7568.write(0x04);        		
-		ZT7568.write(0xC0);        		
-		ZT7568.endTransmission();
+		ZT7548.beginTransmission(ZT7548_SLAVE_ADDR); 		
+		ZT7548.write(0x04);        		
+		ZT7548.write(0xC0);        		
+		ZT7548.endTransmission();
 		delay(10);
 		
 		cmd_buf[0] = 0x01;
-		cmd_buf[1] = 0x00;
-		ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
-		ZT7568.write(0x01);        		
-		ZT7568.write(0xC0);        		
-		ZT7568.write(cmd_buf, 2);        		
-		ZT7568.endTransmission(); 
+		cmd_buf[1] = 0xC0;
+		cmd_buf[2] = 0x01;
+		cmd_buf[3] = 0x00;
+		ZT7548.beginTransmission(ZT7548_SLAVE_ADDR); 		     		
+		ZT7548.write(cmd_buf, 4);        		
+		ZT7548.endTransmission(); 
 		delay(10);
 		#endif
   /* USER CODE END 2 */
@@ -292,45 +313,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
-//			  #ifdef HW_i2C			
-//			  I2C_Read_nByte(0x20, 0x8000,read_buf, 40);
-//	      I2C_Write_nByte(0x20, 0x0300, 0, 0);	
-//			  #endif
-//			
-//        #ifdef Soft_i2C			
-//				ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
-//				ZT7568.write(0x80);        		
-//				ZT7568.write(0x00);        		    		
-//				ZT7568.endTransmission(); 
-//				delay_us(50);
-//			
-//				ZT7568.requestFrom(ZT7568_SLAVE_ADDR, 40);    
-//			
-//				while (ZT7568.available()) 
-//				{ 
-//						for(uint8_t i = 0; i < 40; i++)
-//					{
-//					  read_buf[i] = ZT7568.read(); 
-//					}
-//				}	
-//				
-//				ZT7568.beginTransmission(ZT7568_SLAVE_ADDR); 		
-//				ZT7568.write(0x03);        		
-//				ZT7568.write(0x00);        		    		
-//				ZT7568.endTransmission(); 
-
-//			  #endif		
-//				digitalWrite(TP_INT_Pin, LOW);
-//        delay(1);
-//			  digitalWrite(TP_INT_Pin, HIGH);
-
-				
-//    LL_GPIO_TogglePin(GPIOB, LL_GPIO_PIN_5);
-//    
-//    /* Insert delay 250 ms */
-//    LL_mDelay(16);
-    /* USER CODE BEGIN 3 */
+      LL_IWDG_ReloadCounter(IWDG);
   }
   /* USER CODE END 3 */
 }
@@ -546,6 +529,7 @@ void Slave_Sending_Callback(void)
   /* Read character in Receive Data register.
   RXNE flag is cleared by reading data in RXDR register */
 	LL_I2C_TransmitData8(I2C1, Response_Message[Tx_Idx_IIC1++]);
+
 }
 /**
   * @brief  Function called from I2C IRQ Handler when STOP flag is set
@@ -556,7 +540,10 @@ void Slave_Sending_Callback(void)
   */
 void Slave_Complete_Callback(void)
 {
-
+	if(Buffer_Rx_IIC1[0] == 0x10)
+	{
+			digitalWrite(TP_INT_Pin, HIGH);
+	}
 }
 
 /**

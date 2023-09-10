@@ -38,6 +38,8 @@ extern "C" {
 
 void MX_I2C1_Init(void);
 void MX_I2C2_Init(void);
+uint8_t I2C_write_reg(I2C_TypeDef *I2Cx , uint8_t SlaveAddr_IC, uint16_t addr_reg, uint8_t* buf, uint8_t len);
+uint16_t I2C_read_reg(I2C_TypeDef *I2Cx , uint8_t SlaveAddr_IC, uint16_t addr_reg, uint8_t *pui8RxBuffer, uint8_t len);
 
 /* USER CODE BEGIN Prototypes */
 

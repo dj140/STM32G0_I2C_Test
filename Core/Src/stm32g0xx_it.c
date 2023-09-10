@@ -165,6 +165,7 @@ void I2C1_IRQHandler(void)
     else if(status & I2C_ISR_STOPF)
     {
 			  LL_I2C_ClearFlag_STOP(I2C1);
+			  Slave_Complete_Callback();
 		}
 		else if(status & I2C_ISR_NACKF)
 		{

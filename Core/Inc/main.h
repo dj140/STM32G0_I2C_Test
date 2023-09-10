@@ -53,6 +53,7 @@ extern "C" {
   */
 
 #define SLAVE_OWN_ADDRESS                       0x48 << 1
+#define ZT7548_SLAVE_ADDR 0x20
 
 extern uint8_t read_buf[40];
 
