@@ -548,6 +548,36 @@
               <FileType>1</FileType>
               <FilePath>..\Lib\Arduino.c</FilePath>
             </File>
+            <File>
+              <FileName>HardwareSerial.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Lib\HardwareSerial.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>dtostrf.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Lib\dtostrf.c</FilePath>
+            </File>
+            <File>
+              <FileName>itoa.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Lib\itoa.c</FilePath>
+            </File>
+            <File>
+              <FileName>Print.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Lib\Print.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>Stream.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Lib\Stream.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>WString.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Lib\WString.cpp</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

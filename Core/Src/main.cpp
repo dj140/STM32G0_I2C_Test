@@ -116,7 +116,7 @@ void MX_GPIO_Init(void)
   LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_8, LL_GPIO_MODE_INPUT);
 	
   /* EXTI interrupt init*/
-  NVIC_SetPriority(EXTI4_15_IRQn, 2);
+  NVIC_SetPriority(EXTI4_15_IRQn, 1);
   NVIC_EnableIRQ(EXTI4_15_IRQn);
 
   /**/
@@ -231,7 +231,9 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_I2C2_Init();
-  MX_USART2_UART_Init();
+//  MX_USART2_UART_Init();
+	Serial2.begin(115200);
+	Serial2.println("Serial printing...");
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
 	pinMode(RESET_Pin, OUTPUT);
@@ -307,6 +309,8 @@ int main(void)
 		ZT7548.endTransmission(); 
 		delay(10);
 		#endif
+	Serial2.println("ZT7548 initial succeed");
+
   /* USER CODE END 2 */
 
   /* Infinite loop */

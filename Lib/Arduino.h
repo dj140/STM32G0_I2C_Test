@@ -130,11 +130,11 @@ void yield(void);
 #endif
 
 #ifdef __cplusplus
-//#  include "WCharacter.h"
-//#  include "WString.h"
-//#  include "WMath.h"
+#  include "WCharacter.h"
+#  include "WString.h"
+#  include "WMath.h"
 //#  include "Tone.h"
-//#  include "HardwareSerial.h"
+#  include "HardwareSerial.h"
 #endif
 
 #endif
