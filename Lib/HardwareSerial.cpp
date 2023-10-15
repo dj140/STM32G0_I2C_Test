@@ -265,10 +265,12 @@ void HardwareSerial::flush(void)
 size_t HardwareSerial::write(uint8_t n)
 {
 //    while(!USART_GetFlagStatus(USARTx, USART_FLAG_TXE)){};
-	  if (LL_USART_IsActiveFlag_TXE(USART1))
-		{
-			LL_USART_TransmitData8(USARTx, n);
-		}
+//	  if (LL_USART_IsActiveFlag_TXE(USARTx))
+//		{
+//			LL_USART_TransmitData8(USARTx, n);
+//		}
+	 while(!LL_USART_IsActiveFlag_TC(USARTx)){};
+	 LL_USART_TransmitData8(USARTx, n);
     return 1;
 }
 

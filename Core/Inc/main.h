@@ -55,7 +55,12 @@ extern "C" {
 #define SLAVE_OWN_ADDRESS                       0x48 << 1
 #define ZT7548_SLAVE_ADDR 0x20
 
+#define RESET_Pin PA15
+#define INT_Output_Pin PB5
+#define INTn_ZT7548 PB4
+
 extern uint8_t read_buf[40];
+static int16_t TouchPoint1_X = 0, TouchPoint1_Y = 0, TouchPoint2_X = 0, TouchPoint2_Y = 0;
 
 void Address_Matching_Callback(void);
 void Slave_Sending_Callback(void);

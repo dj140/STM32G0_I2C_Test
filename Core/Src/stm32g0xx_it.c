@@ -171,6 +171,11 @@ void I2C1_IRQHandler(void)
 		{
 		    LL_I2C_ClearFlag_NACK(I2C1);
 		}
+		else
+		{
+    /* Call Error function */
+			Error_Callback();
+		}
 }
 
 /* USER CODE BEGIN 1 */

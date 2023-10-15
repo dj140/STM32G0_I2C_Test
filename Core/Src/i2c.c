@@ -177,7 +177,14 @@ uint8_t I2C_write_reg(I2C_TypeDef *I2Cx , uint8_t SlaveAddr_IC, uint16_t addr_re
     LL_I2C_HandleTransfer(I2Cx, SlaveAddr_IC,LL_I2C_ADDRSLAVE_7BIT, len + 2 ,LL_I2C_MODE_AUTOEND,LL_I2C_GENERATE_START_WRITE ); //LL_I2C_GENERATE_START_READ
     while(LL_I2C_IsActiveFlag_TXE(I2Cx)==RESET);
     LL_I2C_TransmitData8(I2Cx, addr_reg>>8);
-	  while(LL_I2C_IsActiveFlag_TXE(I2Cx)==RESET);
+	  while(LL_I2C_IsActiveFlag_TXE(I2Cx)==RESET)
+		{
+        counter++;
+        if( counter == 25000 ) {
+            Error_Handler();
+            return ERROR;
+        }
+    }
 	  LL_I2C_TransmitData8(I2Cx, addr_reg);
     counter=0;
     while(LL_I2C_IsActiveFlag_TXE(I2Cx)==RESET){
@@ -206,7 +213,7 @@ uint16_t I2C_read_reg(I2C_TypeDef *I2Cx , uint8_t SlaveAddr_IC, uint16_t addr_re
         counter++;
         if( counter == 25000 ){//aproximate 150ms
             Error_Handler();
-            return 0xFF;
+            return ERROR;
         }
     }
     LL_I2C_HandleTransfer(I2Cx, SlaveAddr_IC,LL_I2C_ADDRSLAVE_7BIT, 2,LL_I2C_MODE_SOFTEND,LL_I2C_GENERATE_START_WRITE ); //LL_I2C_GENERATE_START_READ
@@ -221,7 +228,7 @@ uint16_t I2C_read_reg(I2C_TypeDef *I2Cx , uint8_t SlaveAddr_IC, uint16_t addr_re
         if( counter == 25000 ){//aproximate 150ms
             LL_I2C_ClearFlag_TXE(I2Cx);
             Error_Handler();
-            return 0xFF;
+            return ERROR;
         }
     }
     while(LL_I2C_IsActiveFlag_TC(I2Cx)==RESET);
@@ -233,7 +240,7 @@ uint16_t I2C_read_reg(I2C_TypeDef *I2Cx , uint8_t SlaveAddr_IC, uint16_t addr_re
         }
     }
     LL_I2C_ClearFlag_STOP(I2Cx);
-    return 1;
+    return SUCCESS;
 }
 
 

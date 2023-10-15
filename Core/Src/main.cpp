@@ -22,20 +22,12 @@
 #include "iwdg.h"
 #include "usart.h"
 #include "gpio.h"
-#include "Arduino.h"
 #include "Wire.h"
-
-
-//#define RESET_Pin PC6
-//#define INT_Output_Pin PB5
-//#define INTn_ZT7548 PA8
-
-#define RESET_Pin PA15
-#define INT_Output_Pin PB5
-#define INTn_ZT7548 PB4
+#include "Arduino.h"
 
 //#define Soft_i2C
 #define HW_i2C
+#define ENABLE_LOGGING
 
 TwoWire ZT7548(SCL_Pin, SDA_Pin, SOFT_FAST);
 /**
@@ -50,6 +42,7 @@ uint8_t Response_Message[40];
 uint8_t read_buf[40];
 uint8_t cmd_buf[10];
 uint8_t flag = 1;
+uint16_t Chip_ID;
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -90,18 +83,9 @@ void MX_GPIO_Init(void)
 {
 
   LL_EXTI_InitTypeDef EXTI_InitStruct = {0};
-//  LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
-//  LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOA);
-//  LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOC);
   LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOB);
-
-  /**/
-//  LL_GPIO_ResetOutputPin(GPIOC, LL_GPIO_PIN_6);
-
-//  /**/
-//  LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_5);
 
   /**/
   LL_EXTI_SetEXTISource(LL_EXTI_CONFIG_PORTB, LL_EXTI_CONFIG_LINE4);
@@ -113,8 +97,6 @@ void MX_GPIO_Init(void)
   EXTI_InitStruct.Trigger = LL_EXTI_TRIGGER_FALLING;
   LL_EXTI_Init(&EXTI_InitStruct);
 
-  /**/
-  LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_4, LL_GPIO_PULL_UP);
 
   /**/
   LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_4, LL_GPIO_MODE_INPUT);
@@ -123,30 +105,29 @@ void MX_GPIO_Init(void)
   NVIC_SetPriority(EXTI4_15_IRQn, 1);
   NVIC_EnableIRQ(EXTI4_15_IRQn);
 
-//  /**/
-//  GPIO_InitStruct.Pin = LL_GPIO_PIN_6;
-//  GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
-//  GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
-//  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-//  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-//  LL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-//  /**/
-//  GPIO_InitStruct.Pin = LL_GPIO_PIN_5;
-//  GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
-//  GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
-//  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-//  GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-//  LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 
 void ZT7548_INT()
 {
+
 	#ifdef HW_i2C			
 	 I2C_read_reg(I2C2,ZT7548_SLAVE_ADDR,0x8000,read_buf,40);
 	 delay_us(50);
 	 I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0x0300, NULL, NULL);
+	#endif
+	
+	#ifdef ENABLE_LOGGING
+		TouchPoint1_X = read_buf[5]<<8 | read_buf[4];
+		TouchPoint1_Y = read_buf[7]<<8 | read_buf[6];
+		TouchPoint2_X = read_buf[11]<<8 | read_buf[10];
+		TouchPoint2_Y = read_buf[13]<<8 | read_buf[12];
+	
+	  Serial2.printf("x1 : %d  y1 : %d\n", TouchPoint1_X, TouchPoint1_Y);		
+  	if(read_buf[2] == 0x02)		
+		{						
+			Serial2.printf("x2 : %d  y2 : %d\n", TouchPoint2_X, TouchPoint2_Y);		
+		}				
 	#endif
 
 	#ifdef Soft_i2C			
@@ -181,73 +162,29 @@ void ZT7548_INT()
   */
 extern "C"
 {
-void EXTI4_15_IRQHandler(void)
-{
-  /* USER CODE BEGIN EXTI4_15_IRQn 0 */
+	void EXTI4_15_IRQHandler(void)
+	{
+		/* USER CODE BEGIN EXTI4_15_IRQn 0 */
 
-  /* USER CODE END EXTI4_15_IRQn 0 */
-  if (LL_EXTI_IsActiveFallingFlag_0_31(LL_EXTI_LINE_4) != RESET)
-  {
-    LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_4);
-    /* USER CODE BEGIN LL_EXTI_LINE_15_RISING */
-    
-    /* Handle user button press in dedicated function */
-    ZT7548_INT(); 
-    /* USER CODE END LL_EXTI_LINE_15_RISING */
-  }
-  /* USER CODE BEGIN EXTI4_15_IRQn 1 */
+		/* USER CODE END EXTI4_15_IRQn 0 */
+		if (LL_EXTI_IsActiveFallingFlag_0_31(LL_EXTI_LINE_4) != RESET)
+		{
+			LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_4);
+			/* USER CODE BEGIN LL_EXTI_LINE_15_RISING */
+			
+			/* Handle user button press in dedicated function */
+			ZT7548_INT(); 
+			/* USER CODE END LL_EXTI_LINE_15_RISING */
+		}
+		/* USER CODE BEGIN EXTI4_15_IRQn 1 */
 
 
-  /* USER CODE END EXTI4_15_IRQn 1 */
+		/* USER CODE END EXTI4_15_IRQn 1 */
+	}
 }
-}
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
+void ZT7548_init()
 {
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
-  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
-
-  /* SysTick_IRQn interrupt configuration */
-//  NVIC_SetPriority(SysTick_IRQn, 3);
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-  Delay_Init();
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_I2C1_Init();
-  MX_I2C2_Init();
-//  MX_USART2_UART_Init();
-	Serial2.begin(115200);
-	Serial2.println("Serial printing...");
-  MX_IWDG_Init();
-  /* USER CODE BEGIN 2 */
-	pinMode(RESET_Pin, OUTPUT);
-	pinMode(INT_Output_Pin, OUTPUT);
-	digitalWrite(INT_Output_Pin, HIGH);
-
-//    pinMode(INTn_ZT7548, INPUT_PULLUP);
-//    attachInterrupt(INTn_ZT7548, LED_Toogle, FALLING);
-
-	digitalWrite(RESET_Pin, HIGH);
+  digitalWrite(RESET_Pin, HIGH);
 	delay(10);
 	digitalWrite(RESET_Pin, LOW);
 	delay(100);
@@ -260,20 +197,27 @@ int main(void)
 	cmd_buf[0] = 0x01;
 	cmd_buf[1] = 0x00;
 	I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0x00C0, cmd_buf, 2);
-	delay(10);
+	delay(1);
+	
+	I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0x04C0, NULL, NULL);
+	delay(1);
+	
+	I2C_read_reg(I2C2, ZT7548_SLAVE_ADDR, 0x00CC, read_buf, 2);
+	Chip_ID = read_buf[1] << 8 | read_buf[0];
+  Serial2.printf("chip code = 0x%X\n", Chip_ID);
+		
+	I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0x04C0, NULL, NULL);
+	delay(1);	
 	
 	cmd_buf[0] = 0x01;
 	cmd_buf[1] = 0x00;
 	I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0x02C0, cmd_buf, 2);
-	delay(10);
-	
-	I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0x04C0, NULL, NULL);
-	delay(10);
+	delay(5);
 	
 	cmd_buf[0] = 0x01;
 	cmd_buf[1] = 0x00;
 	I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0x01C0, cmd_buf, 2);
-	delay(10);		
+	delay(50);		
 		
   #endif
   #ifdef Soft_i2C
@@ -314,6 +258,54 @@ int main(void)
 		delay(10);
 		#endif
 	Serial2.println("ZT7548 initial succeed");
+}
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
+  /* USER CODE BEGIN 1 */
+
+  /* USER CODE END 1 */
+
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
+  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
+
+  /* SysTick_IRQn interrupt configuration */
+//  NVIC_SetPriority(SysTick_IRQn, 3);
+
+  /* USER CODE BEGIN Init */
+
+  /* USER CODE END Init */
+
+  /* Configure the system clock */
+  SystemClock_Config();
+  Delay_Init();
+  /* USER CODE BEGIN SysInit */
+	
+  /* USER CODE END SysInit */
+
+  /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_I2C1_Init();
+  MX_I2C2_Init();
+	
+	Serial2.begin(115200);
+	Serial2.println("Serial printing...");
+  MX_IWDG_Init();
+  /* USER CODE BEGIN 2 */
+	pinMode(RESET_Pin, OUTPUT);
+	pinMode(INT_Output_Pin, OUTPUT);
+	digitalWrite(INT_Output_Pin, HIGH);
+
+//    pinMode(INTn_ZT7548, INPUT_PULLUP);
+//    attachInterrupt(INTn_ZT7548, LED_Toogle, FALLING);
+  ZT7548_init();
+	
 
   /* USER CODE END 2 */
 
@@ -323,6 +315,7 @@ int main(void)
   {
       LL_IWDG_ReloadCounter(IWDG);
   }
+
   /* USER CODE END 3 */
 }
 
@@ -401,7 +394,14 @@ void Slave_Reception_Callback(void)
 					Response_Message[0] = 0x26;				
 					break;
 			case 0x0F:  
-					Response_Message[0] = 0x08;				
+					if(read_buf[2] == 0x02)		// if detet 2 finger
+					{
+						Response_Message[0] = 0x10;				
+					}
+					else
+          {
+					  Response_Message[0] = 0x08;				
+          }
 					break;
 			case 0xE1:  
 					Response_Message[0] = 0x04;			
@@ -438,54 +438,55 @@ void Slave_Reception_Callback(void)
 			case 0xE3:  
 					Response_Message[0] = 0x07;
 					break;				
+
 			case 0x10:  // Get Point status
 					for(int i = 0; i < 40; i++)
 					{
 						
 							Response_Message[i] = 0x00;
 					}
-					if(read_buf[2] == 0x02)		// if detet 2 finger
-					{
-						flag++;
-						if(flag == 0x01)
-						{
-							//Finger 0 event info (touch / event type / hover / palm / event id[0~3])
-							Response_Message[0] = 0xA2;
-							
-							//Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-							Response_Message[1] = (read_buf[13] << 4) | (read_buf[11] & 0x0F);
-						
-							//Finger 0 x coordinate (bit 7 ~ bit 0)
-							Response_Message[2] = read_buf[10] ;
-						
-							//Finger 0 y coordinate (bit 7 ~ bit 0)
-							Response_Message[3] = read_buf[12] ;
+//					if(read_buf[2] == 0x02)		// if detet 2 finger
+//					{
+//						flag++;
+//						if(flag == 0x01)
+//						{
+//							//Finger 0 event info (touch / event type / hover / palm / event id[0~3])
+//							Response_Message[0] = 0xA2;
+//							
+//							//Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
+//							Response_Message[1] = (read_buf[13] << 4) | (read_buf[11] & 0x0F);
+//						
+//							//Finger 0 x coordinate (bit 7 ~ bit 0)
+//							Response_Message[2] = read_buf[10] ;
+//						
+//							//Finger 0 y coordinate (bit 7 ~ bit 0)
+//							Response_Message[3] = read_buf[12] ;
 
-							//Finger 0 z (strength)
-							Response_Message[4] = read_buf[14] ;
-						}
-						else
-						{
-							//Finger 0 event info (touch / event type / hover / palm / event id[0~3])
-							Response_Message[0] =  0xA1;									
-										
-							//Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-							Response_Message[1] = (read_buf[7] << 4) | (read_buf[5] & 0x0F);
-						
-							//Finger 0 x coordinate (bit 7 ~ bit 0)
-							Response_Message[2] = read_buf[4] ;
-						
-							//Finger 0 y coordinate (bit 7 ~ bit 0)
-							Response_Message[3] = read_buf[6] ;
+//							//Finger 0 z (strength)
+//							Response_Message[4] = read_buf[14] ;
+//						}
+//						else
+//						{
+//							//Finger 0 event info (touch / event type / hover / palm / event id[0~3])
+//							Response_Message[0] =  0xA1;									
+//										
+//							//Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
+//							Response_Message[1] = (read_buf[7] << 4) | (read_buf[5] & 0x0F);
+//						
+//							//Finger 0 x coordinate (bit 7 ~ bit 0)
+//							Response_Message[2] = read_buf[4] ;
+//						
+//							//Finger 0 y coordinate (bit 7 ~ bit 0)
+//							Response_Message[3] = read_buf[6] ;
 
-							//Finger 0 z (strength)
-							Response_Message[4] = read_buf[8] ;
-							
-							flag = 0;
-							}
-						}
-						else
-						{
+//							//Finger 0 z (strength)
+//							Response_Message[4] = read_buf[8] ;
+//							
+//							flag = 0;
+//							}
+//						}
+//						else
+//						{
 							//Finger 0 event info (touch / event type / hover / palm / event id[0~3])
 							Response_Message[0] = (read_buf[1]<<4 | 0x7F) & 0xA1;									
 										
@@ -500,7 +501,7 @@ void Slave_Reception_Callback(void)
 
 							//Finger 0 z (strength)
 							Response_Message[4] = read_buf[8] ;
-						}
+//						}
 						//Finger 1 event info (touch / event type / hover / palm / event id[0~3])		
 						if(read_buf[2] == 0x02)		
 						{							
@@ -562,8 +563,10 @@ void Slave_Complete_Callback(void)
 void Error_Callback(void)
 {
   /* Disable I2C1_IRQn */
-//  NVIC_DisableIRQ(I2C1_IRQn);
-
+	Serial2.println("I2C Salve Communication ERROR !!!!!");		
+	Serial2.println("Please restart the system !!!!!");		
+  NVIC_DisableIRQ(I2C1_IRQn);
+	NVIC_SystemReset();
 }
 /**
   * @brief  This function is executed in case of error occurrence.
@@ -573,10 +576,13 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
+//  __disable_irq();
+//  while (1)
+//  {
+//  }			
+	Serial2.println("ZT7548 Communication ERROR !!!!!");		
+	Serial2.println("Please restart the system !!!!!");		
+	NVIC_SystemReset();
   /* USER CODE END Error_Handler_Debug */
 }
 

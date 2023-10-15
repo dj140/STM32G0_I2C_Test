@@ -531,7 +531,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>ArduinoAPI</GroupName>
+          <GroupName>API</GroupName>
           <Files>
             <File>
               <FileName>Wire.cpp</FileName>
