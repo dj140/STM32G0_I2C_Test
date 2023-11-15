@@ -51,16 +51,41 @@ extern "C" {
 /**
   * @brief Slave settings
   */
+#include "math.h"
 
 #define SLAVE_OWN_ADDRESS                       0x48 << 1
-#define ZT7548_SLAVE_ADDR 0x20
+#define finger_num                       2
 
 #define RESET_Pin PA15
 #define INT_Output_Pin PB5
 #define INTn_ZT7548 PB4
 
-extern uint8_t read_buf[40];
-static int16_t TouchPoint1_X = 0, TouchPoint1_Y = 0, TouchPoint2_X = 0, TouchPoint2_Y = 0;
+typedef struct
+{
+	uint8_t x;
+	uint8_t y;
+	uint8_t xy;
+	uint8_t width;
+	uint8_t sub_status;
+}Melfas_coord;
+
+typedef struct
+{
+	uint16_t x;
+	uint16_t y;
+	uint16_t width;
+	uint8_t sub_status;
+}Zinitix_coord;
+
+typedef struct
+{
+	uint8_t status;
+	uint8_t finger_cnt;
+	uint8_t time_stamp; //(Option)
+}zinitix_point_info;
+
+extern uint8_t read_buf[16];
+static int16_t start_x = 0, start_y = 0, end_x = 0, end_y = 0, start_distance = 0, end_distance = 0;
 
 void Address_Matching_Callback(void);
 void Slave_Sending_Callback(void);
@@ -68,6 +93,8 @@ void Slave_Reception_Callback(void);
 void Slave_Complete_Callback(void);
 void UserButton_Callback(void);
 void Error_Callback(void);
+void ZT7548_INT(void);
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

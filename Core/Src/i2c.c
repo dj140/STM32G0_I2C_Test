@@ -19,6 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "i2c.h"
+#include "ZT7548.h"
 
 /* USER CODE BEGIN 0 */
 
@@ -74,6 +75,10 @@ void MX_I2C1_Init(void)
   */
   LL_I2C_EnableClockStretching(I2C1);
   I2C_InitStruct.PeripheralMode = LL_I2C_MODE_I2C;
+	/* Timing register value is computed with the STM32CubeMX Tool,
+  * Fast Mode @400kHz with I2CCLK = 64 MHz,
+  * rise time = 100ns, fall time = 10ns
+  * Timing Value = (uint32_t)0x00C0216C*/
   I2C_InitStruct.Timing = 0x00C0216C;
   I2C_InitStruct.AnalogFilter = LL_I2C_ANALOGFILTER_ENABLE;
   I2C_InitStruct.DigitalFilter = 0;
@@ -146,7 +151,7 @@ void MX_I2C2_Init(void)
   /** I2C Initialization
   */
   I2C_InitStruct.PeripheralMode = LL_I2C_MODE_I2C;
-  I2C_InitStruct.Timing = 0x2010091A;
+  I2C_InitStruct.Timing = 0x00C0216C;
   I2C_InitStruct.AnalogFilter = LL_I2C_ANALOGFILTER_ENABLE;
   I2C_InitStruct.DigitalFilter = 0;
   I2C_InitStruct.OwnAddress1 = ZT7548_SLAVE_ADDR;
@@ -176,7 +181,7 @@ uint8_t I2C_write_reg(I2C_TypeDef *I2Cx , uint8_t SlaveAddr_IC, uint16_t addr_re
     }
     LL_I2C_HandleTransfer(I2Cx, SlaveAddr_IC,LL_I2C_ADDRSLAVE_7BIT, len + 2 ,LL_I2C_MODE_AUTOEND,LL_I2C_GENERATE_START_WRITE ); //LL_I2C_GENERATE_START_READ
     while(LL_I2C_IsActiveFlag_TXE(I2Cx)==RESET);
-    LL_I2C_TransmitData8(I2Cx, addr_reg>>8);
+    LL_I2C_TransmitData8(I2Cx, addr_reg);
 	  while(LL_I2C_IsActiveFlag_TXE(I2Cx)==RESET)
 		{
         counter++;
@@ -185,7 +190,7 @@ uint8_t I2C_write_reg(I2C_TypeDef *I2Cx , uint8_t SlaveAddr_IC, uint16_t addr_re
             return ERROR;
         }
     }
-	  LL_I2C_TransmitData8(I2Cx, addr_reg);
+	  LL_I2C_TransmitData8(I2Cx, addr_reg>>8);
     counter=0;
     while(LL_I2C_IsActiveFlag_TXE(I2Cx)==RESET){
         counter++;
@@ -218,9 +223,9 @@ uint16_t I2C_read_reg(I2C_TypeDef *I2Cx , uint8_t SlaveAddr_IC, uint16_t addr_re
     }
     LL_I2C_HandleTransfer(I2Cx, SlaveAddr_IC,LL_I2C_ADDRSLAVE_7BIT, 2,LL_I2C_MODE_SOFTEND,LL_I2C_GENERATE_START_WRITE ); //LL_I2C_GENERATE_START_READ
     while(LL_I2C_IsActiveFlag_TXE(I2Cx)==RESET);
-    LL_I2C_TransmitData8(I2Cx, addr_reg>>8);
-		while(LL_I2C_IsActiveFlag_TXE(I2Cx)==RESET);
     LL_I2C_TransmitData8(I2Cx, addr_reg);
+		while(LL_I2C_IsActiveFlag_TXE(I2Cx)==RESET);
+    LL_I2C_TransmitData8(I2Cx, addr_reg>>8);
 		
     counter=0;
     while(LL_I2C_IsActiveFlag_TXE(I2Cx)==RESET){

@@ -132,6 +132,52 @@ void PendSV_Handler(void)
 
 //  /* USER CODE END SysTick_IRQn 1 */
 //}
+/**
+  * @brief This function handles EXTI line 4 to 15 interrupts.
+  */
+
+	void EXTI4_15_IRQHandler(void)
+	{
+		/* USER CODE BEGIN EXTI4_15_IRQn 0 */
+
+		/* USER CODE END EXTI4_15_IRQn 0 */
+		if (LL_EXTI_IsActiveFallingFlag_0_31(LL_EXTI_LINE_4) != RESET)
+		{
+			LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_4);
+			/* USER CODE BEGIN LL_EXTI_LINE_15_RISING */
+			
+			/* Handle user button press in dedicated function */
+			ZT7548_INT(); 
+			/* USER CODE END LL_EXTI_LINE_15_RISING */
+		}
+		/* USER CODE BEGIN EXTI4_15_IRQn 1 */
+
+
+		/* USER CODE END EXTI4_15_IRQn 1 */
+	}
+
+
+/**
+  * @brief This function handles EXTI line 0 and line 1 interrupts.
+  */
+
+	void EXTI0_1_IRQHandler(void)
+	{
+		/* USER CODE BEGIN EXTI0_1_IRQn 0 */
+
+		/* USER CODE END EXTI0_1_IRQn 0 */
+		if (LL_EXTI_IsActiveFallingFlag_0_31(LL_EXTI_LINE_1) != RESET)
+		{
+			LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_1);
+			/* USER CODE BEGIN LL_EXTI_LINE_1_FALLING */
+//      LL_GPIO_ResetOutputPin(GPIOB,LL_GPIO_PIN_5);
+    	NVIC_SystemReset();
+			/* USER CODE END LL_EXTI_LINE_1_FALLING */
+		}
+		/* USER CODE BEGIN EXTI0_1_IRQn 1 */
+
+		/* USER CODE END EXTI0_1_IRQn 1 */
+	}
 
 /******************************************************************************/
 /* STM32G0xx Peripheral Interrupt Handlers                                    */
