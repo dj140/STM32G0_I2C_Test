@@ -53,7 +53,7 @@ extern "C" {
   */
 #include "math.h"
 
-#define SLAVE_OWN_ADDRESS                       0x48 << 1
+#define SLAVE_OWN_ADDRESS                0x48 << 1
 #define finger_num                       2
 
 #define RESET_Pin PA15
@@ -62,37 +62,35 @@ extern "C" {
 
 typedef struct
 {
-	uint8_t x;
-	uint8_t y;
-	uint8_t xy;
-	uint8_t width;
-	uint8_t sub_status;
+  uint8_t x;
+  uint8_t y;
+  uint8_t xy;
+  uint8_t strength;
+  uint8_t sub_status;
 }Melfas_coord;
 
 typedef struct
 {
-	uint16_t x;
-	uint16_t y;
-	uint16_t width;
-	uint8_t sub_status;
+  uint16_t x;
+  uint16_t y;
+  uint16_t strength;
+  uint8_t sub_status;
 }Zinitix_coord;
 
 typedef struct
 {
-	uint8_t status;
-	uint8_t finger_cnt;
-	uint8_t time_stamp; //(Option)
+  uint8_t status;
+  uint8_t finger_cnt;
+  uint8_t time_stamp; //(Option)
 }zinitix_point_info;
 
+extern Melfas_coord Melfas[];
+extern Zinitix_coord Zinitix[];
+
 extern uint8_t read_buf[16];
+extern uint8_t in_flag, out_flag;
 static int16_t start_x = 0, start_y = 0, end_x = 0, end_y = 0, start_distance = 0, end_distance = 0;
 
-void Address_Matching_Callback(void);
-void Slave_Sending_Callback(void);
-void Slave_Reception_Callback(void);
-void Slave_Complete_Callback(void);
-void UserButton_Callback(void);
-void Error_Callback(void);
 void ZT7548_INT(void);
 
 /* USER CODE END Includes */

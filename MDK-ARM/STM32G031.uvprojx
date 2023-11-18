@@ -409,14 +409,14 @@
               <FilePath>../Core/Src/usart.c</FilePath>
             </File>
             <File>
-              <FileName>stm32g0xx_it.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>../Core/Src/stm32g0xx_it.c</FilePath>
-            </File>
-            <File>
               <FileName>main.cpp</FileName>
               <FileType>8</FileType>
               <FilePath>..\Core\Src\main.cpp</FilePath>
+            </File>
+            <File>
+              <FileName>stm32g0xx_it.cpp</FileName>
+              <FileType>8</FileType>
+              <FilePath>..\Core\Src\stm32g0xx_it.cpp</FilePath>
             </File>
           </Files>
         </Group>
