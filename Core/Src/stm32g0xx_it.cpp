@@ -21,6 +21,9 @@
 #include "main.h"
 #include "Arduino.h"
 #include "stm32g0xx_it.h"
+#include "ZT7548.h"
+#include "i2c.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -37,13 +40,13 @@ void Slave_Reception_Callback(void);
 void Slave_Complete_Callback(void);
 void UserButton_Callback(void);
 void Error_Callback(void);
-   
+
 uint8_t  Buffer_Rx_IIC1[16];
 uint8_t Response_Message[16];
 uint8_t  Rx_Idx_IIC1=0;
 uint8_t  Tx_Idx_IIC1=0;
-uint8_t finger_two_flag = 0,finger_one_flag = 0;
-uint8_t finger_one_up_flag = 0;
+uint8_t  two_finger_down_flag = 0, two_finger_up_flag = 0;
+uint8_t in_flag = 0, out_flag = 0;
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
@@ -153,6 +156,120 @@ void PendSV_Handler(void)
 /**
   * @brief This function handles EXTI line 4 to 15 interrupts.
   */
+void ZT7548_INT()
+{
+
+#ifdef HW_i2C
+  I2C_read_reg(I2C2,ZT7548_SLAVE_ADDR, ZT7538_POINT_STATUS_REG, read_buf, 16);
+  delay_us(50);
+  I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, ZT7538_CLEAR_INT_STATUS_CMD, NULL, NULL);
+
+  Zinitix[0].x = read_buf[5]<<8 | read_buf[4];
+  Zinitix[0].y = read_buf[7]<<8 | read_buf[6];
+  Zinitix[1].x = read_buf[11]<<8 | read_buf[10];
+  Zinitix[1].y = read_buf[13]<<8 | read_buf[12];
+
+  Melfas[0].x  = read_buf[4];
+  Melfas[0].y  = read_buf[6];
+  Melfas[0].xy = read_buf[7] << 4 |  (read_buf[5] & 0x0F);
+  Melfas[0].strength = read_buf[8];
+  
+  Melfas[1].x  = read_buf[10];
+  Melfas[1].y  = read_buf[12];
+  Melfas[1].xy = read_buf[13] << 4 | (read_buf[11] & 0x0F);
+  Melfas[1].strength = read_buf[14];
+
+  if(bitRead(read_buf[15],0) == 1)
+  {
+    if((bitRead(read_buf[15],2) | bitRead(read_buf[9],2)) == 1)
+    {
+      start_x = abs(Zinitix[0].x - Zinitix[1].x);
+      start_y = abs(Zinitix[0].y - Zinitix[1].y);
+      start_distance = sqrt(float(sq(start_x) + sq(start_y)));
+
+      if(end_distance > 0)
+      {
+        if(start_distance < end_distance)
+        {
+          in_flag = 1;
+        }
+        if(start_distance > end_distance)
+        {
+          out_flag = 1;
+        }
+      }
+      end_distance = start_distance;
+    }
+  }
+  else
+  {
+    end_distance = start_distance = 0;
+    in_flag = out_flag = 0;
+  }
+
+#endif
+
+#ifdef ENABLE_LOGGING
+  if(out_flag == 1)
+  {
+    Serial2.println("Zoom out");
+  }
+  if(in_flag == 1)
+  {
+    Serial2.println("Zoom in");
+  }
+  if(read_buf[2] == 0x05)
+  {
+    Serial2.println("up");
+  }
+  if(read_buf[2] == 0x01)
+  {
+    Serial2.println("down");
+  }
+  if(read_buf[2] == 0x03)
+  {
+    Serial2.println("left");
+  }
+  if(read_buf[2] == 0x07)
+  {
+    Serial2.println("right");
+  }
+  Serial2.printf("x1 : %d  y1 : %d\n", Zinitix[0].x, Zinitix[0].y);
+
+  if(bitRead(read_buf[15],0) == 1)
+  {
+    Serial2.printf("x2 : %d  y2 : %d\n", Zinitix[1].x, Zinitix[1].y);
+  }
+#endif
+
+#ifdef Soft_i2C
+  ZT7548.beginTransmission(ZT7548_SLAVE_ADDR);
+  ZT7548.write(0x80);
+  ZT7548.write(0x00);
+  ZT7548.endTransmission(); 
+  delay_us(50);
+
+  ZT7548.requestFrom(ZT7548_SLAVE_ADDR, 40);    
+
+  while (ZT7548.available()) 
+  { 
+    for(uint8_t i = 0; i < 40; i++)
+    {
+      read_buf[i] = ZT7548.read(); 
+    }
+  }
+
+  ZT7548.beginTransmission(ZT7548_SLAVE_ADDR);
+  ZT7548.write(0x03);
+  ZT7548.write(0x00);
+  ZT7548.endTransmission(); 
+
+#endif
+
+digitalWrite(INT_Output_Pin, LOW);
+//delay(1);
+
+}
 
 void EXTI4_15_IRQHandler(void)
 {
@@ -254,6 +371,117 @@ void Address_Matching_Callback(void)
   Rx_Idx_IIC1=0;
   Tx_Idx_IIC1=0;
 }
+
+void Gesture_mapping(void)
+{
+  //Input Gesture Direction
+  if(read_buf[2] == 0x05)
+  {
+    Response_Message[7] = 0x07;//up
+  }
+  if(read_buf[2] == 0x01)
+  {
+    Response_Message[7] = 0x03;//down
+  }
+  if(read_buf[2] == 0x03)
+  {
+    Response_Message[7] = 0x05;//left
+  }
+  if(read_buf[2] == 0x07)
+  {
+    Response_Message[7] = 0x01;//right
+  }
+  if(bitRead(read_buf[2],0) | bitRead(read_buf[2],1) | bitRead(read_buf[2],2) == 1)
+  {
+    Response_Message[6] = 0x01;//flick
+  }
+
+  //Pinch in/out
+  if(out_flag == 1)
+  {
+    Response_Message[6] = 0x03;
+    Response_Message[14] = 0x03;
+  }
+  if(in_flag == 1)
+  {
+    Response_Message[6] = 0x04;
+    Response_Message[14] = 0x04;
+  }
+}
+
+void finger_one_coord_mapping(void)
+{
+
+  //Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
+  Response_Message[1] = Melfas[0].xy;
+
+  //Finger 0 x coordinate (bit 7 ~ bit 0)
+  Response_Message[2] = Melfas[0].x;
+
+  //Finger 0 y coordinate (bit 7 ~ bit 0)
+  Response_Message[3] = Melfas[0].y;
+
+  //Finger 0 z (strength)
+  Response_Message[5] = Melfas[0].strength;
+
+  //plam mapping
+  if(bitRead(read_buf[9],7) == 1 & bitRead(read_buf[9],0) == 1)
+  {
+    Response_Message[0] = 0xB1;
+  }
+}
+
+void finger_two_coord_mapping(void)
+{
+  //Finger 1 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
+  Response_Message[1] = Melfas[1].xy;
+
+  //Finger 1 x coordinate (bit 7 ~ bit 0)
+  Response_Message[2] = Melfas[1].x;
+
+  //Finger 1 y coordinate (bit 7 ~ bit 0)
+  Response_Message[3] = Melfas[1].y;
+
+  //Finger 1 z (strength)
+  Response_Message[5] = Melfas[1].strength;
+
+  //plam mapping
+  if(bitRead(read_buf[15],7) == 1 & bitRead(read_buf[15],0) == 1)
+  {
+    Response_Message[0] = 0xB2;
+  }
+}
+
+void both_finger_coord_mapping(void)
+{
+  //Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
+  Response_Message[1] = Melfas[0].xy;
+
+  //Finger 0 x coordinate (bit 7 ~ bit 0)
+  Response_Message[2] = Melfas[0].x;
+
+  //Finger 0 y coordinate (bit 7 ~ bit 0)
+  Response_Message[3] = Melfas[0].y;
+
+  //Finger 0 z (strength)
+  Response_Message[5] = Melfas[0].strength;
+  //Finger 1 event info (touch / event type / hover / palm / event id[0~3])
+
+  //Finger 1 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
+  Response_Message[9] = Melfas[1].xy;
+
+  //Finger 1 x coordinate (bit 7 ~ bit 0)
+  Response_Message[10] = Melfas[1].x;
+
+  //Finger 1 y coordinate (bit 7 ~ bit 0)
+  Response_Message[11] = Melfas[1].y;
+
+  //Finger 1 z (strength)
+  Response_Message[13] = Melfas[1].strength;
+  
+
+}
+
 /**
 * @brief  Function called from I2C IRQ Handler when RXNE flag is set
 *         Function is in charge of retrieving received byte on I2C lines.
@@ -277,24 +505,10 @@ void Slave_Reception_Callback(void)
       {
         Response_Message[0] = 0x10;
       }
-//      //if only have one finger move report package size 0x08
-//      if(bitRead(read_buf[9],2) == 1 & bitRead(read_buf[15],2) == 0)
-//      {
-//        Response_Message[0] = 0x08;
-//      }
-//      if(bitRead(read_buf[9],2) == 0 & bitRead(read_buf[15],2) == 1)
-//      {
-//        Response_Message[0] = 0x08;
-//      }
-//      //if only have one finger exit report package size 0x08
-//      if(bitRead(read_buf[9],0) == 1 | bitRead(read_buf[15],0) == 1)
-//      {
-//        Response_Message[0] = 0x08;
-//      }
-      
-      if(finger_two_flag == 1 & bitRead(read_buf[15],0) == 0 )
+      if(two_finger_down_flag == 1 & bitRead(read_buf[9],0) == 0 & bitRead(read_buf[15],0) == 0)
       {
         Response_Message[0] = 0x10;
+        two_finger_up_flag =1;
       }
     break;
       
@@ -345,284 +559,72 @@ void Slave_Reception_Callback(void)
       {
         Response_Message[i] = 0x00;
       }
-      
-      //only one finger down, one finger up condition
-      if(finger_one_flag ==1 &bitRead(read_buf[9],0) ==0)
-      {
-        Response_Message[0] = 0x21;
-        //Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-        Response_Message[1] = Melfas[0].xy;
 
-        //Finger 0 x coordinate (bit 7 ~ bit 0)
-        Response_Message[2] = Melfas[0].x;
-
-        //Finger 0 y coordinate (bit 7 ~ bit 0)
-        Response_Message[3] = Melfas[0].y;
-
-        //Finger 0 z (strength)
-        Response_Message[5] = Melfas[0].strength;
-      }
-      
       // only finger one press down
-      if(bitRead(read_buf[9],0) == 1 & bitRead(read_buf[15],0) == 0)
+      if(bitRead(read_buf[9],0) == 1)
       {
-        finger_one_flag =1;
         //Finger 0 event info (touch / event type / hover / palm / event id[0~3])
         Response_Message[0] = 0xA1;
-        //Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-        Response_Message[1] = Melfas[0].xy;
-
-        //Finger 0 x coordinate (bit 7 ~ bit 0)
-        Response_Message[2] = Melfas[0].x;
-
-        //Finger 0 y coordinate (bit 7 ~ bit 0)
-        Response_Message[3] = Melfas[0].y;
-
-        //Finger 0 z (strength)
-        Response_Message[5] = Melfas[0].strength;
-        
-        //plam mapping
-        if(bitRead(read_buf[9],7) == 1)	
-        {
-          Response_Message[0] = 0xB1;
-        }
-      } else finger_one_flag =0;
+        finger_one_coord_mapping();
+      }
       
       // only finger two press down
       if(bitRead(read_buf[9],0) == 0 & bitRead(read_buf[15],0) == 1)
       {
         //Finger 1 event info (touch / event type / hover / palm / event id[0~3])
         Response_Message[0] = 0xA2;
-        //Finger 1 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-        Response_Message[1] = Melfas[1].xy;
-
-        //Finger 1 x coordinate (bit 7 ~ bit 0)
-        Response_Message[2] = Melfas[1].x;
-
-        //Finger 1 y coordinate (bit 7 ~ bit 0)
-        Response_Message[3] = Melfas[1].y;
-
-        //Finger 1 z (strength)
-        Response_Message[5] = Melfas[1].strength;
-        
-        //plam mapping
-        if(bitRead(read_buf[15],7) == 1)
-        {
-          Response_Message[0] = 0xB2;
-        }
+        finger_two_coord_mapping();
       }
-      
-      //two finger down  -->  finger one up
-      if(finger_two_flag == 1 & bitRead(read_buf[9],0) == 0 )
-      {
-        //Finger 0 event info (touch / event type / hover / palm / event id[0~3])
-        Response_Message[0] = 0x21;
-        
-        //Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-        Response_Message[1] = Melfas[0].xy;
 
-        //Finger 0 x coordinate (bit 7 ~ bit 0)
-        Response_Message[2] = Melfas[0].x;
-
-        //Finger 0 y coordinate (bit 7 ~ bit 0)
-        Response_Message[3] = Melfas[0].y;
-
-        //Finger 0 z (strength)
-        Response_Message[5] = Melfas[0].strength;
-        
-        finger_one_up_flag =1;
-      }
-      
-      //two finger down  -->  finger one up  -->  finger two up
-      if(finger_one_up_flag == 1 & bitRead(read_buf[15],0) == 0 )
-      {
-        //Finger 1 event info (touch / event type / hover / palm / event id[0~3])
-        Response_Message[0] = 0x22;
-        
-        //Finger 1 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-        Response_Message[1] = Melfas[1].xy;
-
-        //Finger 1 x coordinate (bit 7 ~ bit 0)
-        Response_Message[2] = Melfas[1].x;
-
-        //Finger 1 y coordinate (bit 7 ~ bit 0)
-        Response_Message[3] = Melfas[1].y;
-
-        //Finger 1 z (strength)
-        Response_Message[5] = Melfas[1].strength;
-        finger_one_up_flag =0;
-      }
-      
-      //two finger down  -->  finger one&two up
-      if(finger_two_flag == 1 & bitRead(read_buf[9],0) == 0 & bitRead(read_buf[15],0) == 0 )
-      {
-        
-        //Finger 0 event info (touch / event type / hover / palm / event id[0~3])
-        Response_Message[0] = 0x21;
-        
-        //Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-        Response_Message[1] = Melfas[0].xy;
-
-        //Finger 0 x coordinate (bit 7 ~ bit 0)
-        Response_Message[2] = Melfas[0].x;
-
-        //Finger 0 y coordinate (bit 7 ~ bit 0)
-        Response_Message[3] = Melfas[0].y;
-
-        //Finger 0 z (strength)
-        Response_Message[5] = Melfas[0].strength;
-        
-        //Finger 1 event info (touch / event type / hover / palm / event id[0~3])
-        Response_Message[8] = 0x22;
-        
-        //Finger 1 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-        Response_Message[9] = Melfas[1].xy;
-
-        //Finger 1 x coordinate (bit 7 ~ bit 0)
-        Response_Message[10] = Melfas[1].x;
-
-        //Finger 1 y coordinate (bit 7 ~ bit 0)
-        Response_Message[11] = Melfas[1].y;
-
-        //Finger 1 z (strength)
-        Response_Message[13] = Melfas[1].strength;
-      }
-      
-      if( bitRead(read_buf[15],0) == 0 )
-      {
-        Response_Message[8] = 0x22;
-        //Finger 1 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-        Response_Message[9] = Melfas[1].xy;
-
-        //Finger 1 x coordinate (bit 7 ~ bit 0)
-        Response_Message[10] = Melfas[1].x;
-
-        //Finger 1 y coordinate (bit 7 ~ bit 0)
-        Response_Message[11] = Melfas[1].y;
-
-        //Finger 1 z (strength)
-        Response_Message[13] = Melfas[1].strength;
-      }
       // both finger press down
       if(bitRead(read_buf[9],0) == 1 & bitRead(read_buf[15],0) == 1)
       {
-        finger_two_flag = 1;
-        // if both finger move report two finger coordinate
-//        if(bitRead(read_buf[9],2) == 1 & bitRead(read_buf[15],2) == 1)
-//        {
-          //Finger 0 event info (touch / event type / hover / palm / event id[0~3])
-          Response_Message[0] = 0xA1;
-          //Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-          Response_Message[1] = Melfas[0].xy;
+         two_finger_down_flag = 1;
 
-          //Finger 0 x coordinate (bit 7 ~ bit 0)
-          Response_Message[2] = Melfas[0].x;
-
-          //Finger 0 y coordinate (bit 7 ~ bit 0)
-          Response_Message[3] = Melfas[0].y;
-
-          //Finger 0 z (strength)
-          Response_Message[5] = Melfas[0].strength;
-          //Finger 1 event info (touch / event type / hover / palm / event id[0~3])
-
-          Response_Message[8] = 0xA2;
-          //Finger 1 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-          Response_Message[9] = Melfas[1].xy;
-
-          //Finger 1 x coordinate (bit 7 ~ bit 0)
-          Response_Message[10] = Melfas[1].x;
-
-          //Finger 1 y coordinate (bit 7 ~ bit 0)
-          Response_Message[11] = Melfas[1].y;
-
-          //Finger 1 z (strength)
-          Response_Message[13] = Melfas[1].strength;
-          if(bitRead(read_buf[9],7) == 1)	
-          {
-            Response_Message[0] = 0xB1;
-          }
-          if(bitRead(read_buf[15],7) == 1)
-          {
-            Response_Message[8] = 0xB2;
-          }
-//        }
+        //Finger 0 event info (touch / event type / hover / palm / event id[0~3])
+        Response_Message[0] = 0xA1;
+        Response_Message[8] = 0xA2;
+        both_finger_coord_mapping();
         // if only finger two move report finger two coordinate
         if(bitRead(read_buf[9],2) == 0 & bitRead(read_buf[15],2) == 1)
         {
           //Finger 1 event info (touch / event type / hover / palm / event id[0~3])
           Response_Message[0] = 0xA2;
-          //Finger 1 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-          Response_Message[1] = Melfas[1].xy;
-
-          //Finger 1 x coordinate (bit 7 ~ bit 0)
-          Response_Message[2] = Melfas[1].x;
-
-          //Finger 1 y coordinate (bit 7 ~ bit 0)
-          Response_Message[3] = Melfas[1].y;
-
-          //Finger 1 z (strength)
-          Response_Message[5] = Melfas[1].strength;
-          if(bitRead(read_buf[15],7) == 1)
+          finger_two_coord_mapping();
+          if(bitRead(read_buf[9],7) == 1 & bitRead(read_buf[9],0) == 1)
           {
-            Response_Message[0] = 0xB2;
+            Response_Message[0] = 0xB1;
+          }
+          if(bitRead(read_buf[15],7) == 1 & bitRead(read_buf[15],0) == 1)
+          {
+            Response_Message[8] = 0xB2;
           }
         }
-//        // if only finger one move report finger one coordinate
-//        if(bitRead(read_buf[9],2) == 1 & bitRead(read_buf[15],2) == 0)
-//        {
-//          //Finger 0 event info (touch / event type / hover / palm / event id[0~3])
-//          Response_Message[0] = 0xA1;
-//          //Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
-//          Response_Message[1] = Melfas[0].xy;
-
-//          //Finger 0 x coordinate (bit 7 ~ bit 0)
-//          Response_Message[2] = Melfas[0].x;
-
-//          //Finger 0 y coordinate (bit 7 ~ bit 0)
-//          Response_Message[3] = Melfas[0].y;
-
-//          //Finger 0 z (strength)
-//          Response_Message[5] = Melfas[0].strength;
-//          if(bitRead(read_buf[9],7) == 1)
-//          {
-//            Response_Message[0] = 0xB1;
-//          }
-//        }
-      } else finger_two_flag =0;
+      } else two_finger_down_flag = 0;
       
-      //Input Gesture Direction
-      if(read_buf[2] == 0x05)
+      if(bitRead(read_buf[0],0) == 1 & bitRead(read_buf[0],3) == 1)
       {
-        Response_Message[7] = 0x07;//up
-      }
-      if(read_buf[2] == 0x01)
-      {
-        Response_Message[7] = 0x03;//down
-      }
-      if(read_buf[2] == 0x03)
-      {
-        Response_Message[7] = 0x05;//left
-      }
-      if(read_buf[2] == 0x07)
-      {
-        Response_Message[7] = 0x01;//right
-      }
-      if(bitRead(read_buf[2],0) | bitRead(read_buf[2],1) | bitRead(read_buf[2],2) == 1)
-      {
-        Response_Message[6] = 0x01;//flick
+        if(read_buf[9] == 0x08 | read_buf[9] == 0x88)
+        {
+          Response_Message[0] = 0x21;
+          finger_one_coord_mapping();
+        }
+        if(read_buf[15] == 0x08 | read_buf[15] == 0x88)
+        {
+          //Finger 1 event info (touch / event type / hover / palm / event id[0~3])
+          Response_Message[0] = 0x22;
+          finger_two_coord_mapping();
+        }
+        if(two_finger_up_flag == 1)
+        {
+          two_finger_up_flag = 0;
+          Response_Message[0] = 0x21;
+          Response_Message[8] = 0x22;
+          both_finger_coord_mapping();
+        }
       }
       
-      //Pinch in/out
-      if(out_flag == 1)
-      {
-        Response_Message[6] = 0x03;
-        Response_Message[14] = 0x03;
-      }
-      if(in_flag == 1)
-      {
-        Response_Message[6] = 0x04;
-        Response_Message[14] = 0x04;
-      }
+      Gesture_mapping();
 
     break;
     default: break;

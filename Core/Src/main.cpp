@@ -26,16 +26,13 @@
 #include "Arduino.h"
 #include "ZT7548.h"
 
-//#define Soft_i2C
-#define HW_i2C
-//#define ENABLE_LOGGING
+
 
 Melfas_coord Melfas[finger_num];
 
 Zinitix_coord Zinitix[finger_num];
 
 TwoWire ZT7548(SCL_Pin, SDA_Pin, SOFT_FAST);
-uint8_t in_flag = 0, out_flag = 0;
 
 
 /**
@@ -238,120 +235,7 @@ void MX_GPIO_Init(void)
   LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 
-void ZT7548_INT()
-{
 
-#ifdef HW_i2C
-  I2C_read_reg(I2C2,ZT7548_SLAVE_ADDR, ZT7538_POINT_STATUS_REG, read_buf, 16);
-  delay_us(50);
-  I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, ZT7538_CLEAR_INT_STATUS_CMD, NULL, NULL);
-
-  Zinitix[0].x = read_buf[5]<<8 | read_buf[4];
-  Zinitix[0].y = read_buf[7]<<8 | read_buf[6];
-  Zinitix[1].x = read_buf[11]<<8 | read_buf[10];
-  Zinitix[1].y = read_buf[13]<<8 | read_buf[12];
-
-  Melfas[0].x  = read_buf[4];
-  Melfas[0].y  = read_buf[6];
-  Melfas[0].xy = read_buf[7] << 4 |  (read_buf[5] & 0x0F);
-  Melfas[0].strength = read_buf[8];
-  
-  Melfas[1].x  = read_buf[10];
-  Melfas[1].y  = read_buf[12];
-  Melfas[1].xy = read_buf[13] << 4 | (read_buf[11] & 0x0F);
-  Melfas[1].strength = read_buf[14];
-
-  if(bitRead(read_buf[15],0) == 1)
-  {
-    if((bitRead(read_buf[15],2) | bitRead(read_buf[9],2)) == 1)
-    {
-      start_x = abs(Zinitix[0].x - Zinitix[1].x);
-      start_y = abs(Zinitix[0].y - Zinitix[1].y);
-      start_distance = sqrt(float(sq(start_x) + sq(start_y)));
-
-      if(end_distance > 0)
-      {
-        if(start_distance < end_distance)
-        {
-          in_flag = 1;
-        }
-        if(start_distance > end_distance)
-        {
-          out_flag = 1;
-        }
-      }
-      end_distance = start_distance;
-    }
-  }
-  else
-  {
-    end_distance = start_distance = 0;
-    in_flag = out_flag = 0;
-  }
-
-#endif
-
-#ifdef ENABLE_LOGGING
-  if(out_flag == 1)
-  {
-    Serial2.println("Zoom out");
-  }
-  if(in_flag == 1)
-  {
-    Serial2.println("Zoom in");
-  }
-  if(read_buf[2] == 0x05)
-  {
-    Serial2.println("up");
-  }
-  if(read_buf[2] == 0x01)
-  {
-    Serial2.println("down");
-  }
-  if(read_buf[2] == 0x03)
-  {
-    Serial2.println("left");
-  }
-  if(read_buf[2] == 0x07)
-  {
-    Serial2.println("right");
-  }
-  Serial2.printf("x1 : %d  y1 : %d\n", Zinitix[0].x, Zinitix[0].y);
-
-  if(bitRead(read_buf[15],0) == 1)
-  {
-    Serial2.printf("x2 : %d  y2 : %d\n", Zinitix[1].x, Zinitix[1].y);
-  }
-#endif
-
-#ifdef Soft_i2C
-  ZT7548.beginTransmission(ZT7548_SLAVE_ADDR);
-  ZT7548.write(0x80);
-  ZT7548.write(0x00);
-  ZT7548.endTransmission(); 
-  delay_us(50);
-
-  ZT7548.requestFrom(ZT7548_SLAVE_ADDR, 40);    
-
-  while (ZT7548.available()) 
-  { 
-    for(uint8_t i = 0; i < 40; i++)
-    {
-      read_buf[i] = ZT7548.read(); 
-    }
-  }
-
-  ZT7548.beginTransmission(ZT7548_SLAVE_ADDR);
-  ZT7548.write(0x03);
-  ZT7548.write(0x00);
-  ZT7548.endTransmission(); 
-
-#endif
-
-digitalWrite(INT_Output_Pin, LOW);
-//delay(1);
-
-}
 
 void ZT7548_init()
 {

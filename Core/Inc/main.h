@@ -53,6 +53,10 @@ extern "C" {
   */
 #include "math.h"
 
+#define HW_i2C
+//#define Soft_i2C
+//#define ENABLE_LOGGING
+
 #define SLAVE_OWN_ADDRESS                0x48 << 1
 #define finger_num                       2
 
@@ -66,7 +70,7 @@ typedef struct
   uint8_t y;
   uint8_t xy;
   uint8_t strength;
-  uint8_t sub_status;
+  uint8_t status;
 }Melfas_coord;
 
 typedef struct
@@ -88,10 +92,8 @@ extern Melfas_coord Melfas[];
 extern Zinitix_coord Zinitix[];
 
 extern uint8_t read_buf[16];
-extern uint8_t in_flag, out_flag;
 static int16_t start_x = 0, start_y = 0, end_x = 0, end_y = 0, start_distance = 0, end_distance = 0;
 
-void ZT7548_INT(void);
 
 /* USER CODE END Includes */
 
