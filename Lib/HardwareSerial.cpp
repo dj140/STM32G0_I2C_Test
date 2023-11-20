@@ -81,8 +81,8 @@ void HardwareSerial::begin(uint32_t BaudRate, SERIAL_Config Config, uint8_t Chan
 
         GPIOx = GPIOA;
 
-				/* Peripheral clock enable */
-			  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART1);
+        /* Peripheral clock enable */
+        LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART1);
         ItChannel = USART1_IRQn;
     }
     else if(USARTx == USART2)
@@ -92,36 +92,36 @@ void HardwareSerial::begin(uint32_t BaudRate, SERIAL_Config Config, uint8_t Chan
 
         GPIOx = GPIOA;
 
-				/* Peripheral clock enable */
-				LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2);
+        /* Peripheral clock enable */
+        LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2);
         ItChannel = USART2_IRQn;
     }
 
-//    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOx, ENABLE);
+  //    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOx, ENABLE);
     LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOA);
-		GPIO_InitStructure.Pin = Tx_Pin | Rx_Pin;
-		GPIO_InitStructure.Mode = LL_GPIO_MODE_ALTERNATE;
-		GPIO_InitStructure.Speed = LL_GPIO_SPEED_FREQ_LOW;
-		GPIO_InitStructure.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-		GPIO_InitStructure.Pull = LL_GPIO_PULL_NO;
-		GPIO_InitStructure.Alternate = LL_GPIO_AF_1;
-		LL_GPIO_Init(GPIOx, &GPIO_InitStructure);
-		
-		/* USART1 interrupt Init */
-		NVIC_SetPriority(ItChannel, ChannelPriority);
-		NVIC_EnableIRQ(ItChannel);
+    GPIO_InitStructure.Pin = Tx_Pin | Rx_Pin;
+    GPIO_InitStructure.Mode = LL_GPIO_MODE_ALTERNATE;
+    GPIO_InitStructure.Speed = LL_GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStructure.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+    GPIO_InitStructure.Pull = LL_GPIO_PULL_NO;
+    GPIO_InitStructure.Alternate = LL_GPIO_AF_1;
+    LL_GPIO_Init(GPIOx, &GPIO_InitStructure);
+    
+    /* USART1 interrupt Init */
+    NVIC_SetPriority(ItChannel, ChannelPriority);
+    NVIC_EnableIRQ(ItChannel);
     //USART 初始化设置
-		USART_InitStructure.PrescalerValue = LL_USART_PRESCALER_DIV1;
-		USART_InitStructure.BaudRate = BaudRate;
-		USART_InitStructure.DataWidth = LL_USART_DATAWIDTH_8B;
-		USART_InitStructure.StopBits = LL_USART_STOPBITS_1;
-		USART_InitStructure.Parity = LL_USART_PARITY_NONE;
-		USART_InitStructure.TransferDirection = LL_USART_DIRECTION_TX_RX;
-		USART_InitStructure.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
-		USART_InitStructure.OverSampling = LL_USART_OVERSAMPLING_16;
-		LL_USART_Init(USARTx, &USART_InitStructure);
-		LL_USART_ConfigAsyncMode(USARTx);
-	
+    USART_InitStructure.PrescalerValue = LL_USART_PRESCALER_DIV1;
+    USART_InitStructure.BaudRate = BaudRate;
+    USART_InitStructure.DataWidth = LL_USART_DATAWIDTH_8B;
+    USART_InitStructure.StopBits = LL_USART_STOPBITS_1;
+    USART_InitStructure.Parity = LL_USART_PARITY_NONE;
+    USART_InitStructure.TransferDirection = LL_USART_DIRECTION_TX_RX;
+    USART_InitStructure.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
+    USART_InitStructure.OverSampling = LL_USART_OVERSAMPLING_16;
+    LL_USART_Init(USARTx, &USART_InitStructure);
+    LL_USART_ConfigAsyncMode(USARTx);
+
     LL_USART_EnableIT_RXNE(USARTx);
     LL_USART_Enable(USARTx);
 

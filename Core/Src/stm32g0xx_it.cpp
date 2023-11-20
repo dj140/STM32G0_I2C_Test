@@ -47,6 +47,7 @@ uint8_t  Rx_Idx_IIC1=0;
 uint8_t  Tx_Idx_IIC1=0;
 uint8_t  two_finger_down_flag = 0, two_finger_up_flag = 0;
 uint8_t in_flag = 0, out_flag = 0;
+
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
@@ -178,7 +179,7 @@ void ZT7548_INT()
   Melfas[1].y  = read_buf[12];
   Melfas[1].xy = read_buf[13] << 4 | (read_buf[11] & 0x0F);
   Melfas[1].strength = read_buf[14];
-
+  //Pinch in/out algorithm
   if(bitRead(read_buf[15],0) == 1)
   {
     if((bitRead(read_buf[15],2) | bitRead(read_buf[9],2)) == 1)
@@ -280,8 +281,6 @@ void EXTI4_15_IRQHandler(void)
   {
     LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_4);
     /* USER CODE BEGIN LL_EXTI_LINE_15_RISING */
-    
-    /* Handle user button press in dedicated function */
     ZT7548_INT(); 
     /* USER CODE END LL_EXTI_LINE_15_RISING */
   }
@@ -409,7 +408,7 @@ void Gesture_mapping(void)
   }
 }
 
-void finger_one_coord_mapping(void)
+void finger_one_coord(void)
 {
 
   //Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
@@ -431,7 +430,7 @@ void finger_one_coord_mapping(void)
   }
 }
 
-void finger_two_coord_mapping(void)
+void finger_two_coord(void)
 {
   //Finger 1 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
   Response_Message[1] = Melfas[1].xy;
@@ -452,7 +451,7 @@ void finger_two_coord_mapping(void)
   }
 }
 
-void both_finger_coord_mapping(void)
+void both_finger_coord(void)
 {
   //Finger 0 xy coordinate (high)  y coordinate (bit 11 ~ bit 8) x coordinate (bit 11 ~ bit 8)
   Response_Message[1] = Melfas[0].xy;
@@ -565,7 +564,7 @@ void Slave_Reception_Callback(void)
       {
         //Finger 0 event info (touch / event type / hover / palm / event id[0~3])
         Response_Message[0] = 0xA1;
-        finger_one_coord_mapping();
+        finger_one_coord();
       }
       
       // only finger two press down
@@ -573,7 +572,7 @@ void Slave_Reception_Callback(void)
       {
         //Finger 1 event info (touch / event type / hover / palm / event id[0~3])
         Response_Message[0] = 0xA2;
-        finger_two_coord_mapping();
+        finger_two_coord();
       }
 
       // both finger press down
@@ -584,13 +583,13 @@ void Slave_Reception_Callback(void)
         //Finger 0 event info (touch / event type / hover / palm / event id[0~3])
         Response_Message[0] = 0xA1;
         Response_Message[8] = 0xA2;
-        both_finger_coord_mapping();
+        both_finger_coord();
         // if only finger two move report finger two coordinate
         if(bitRead(read_buf[9],2) == 0 & bitRead(read_buf[15],2) == 1)
         {
           //Finger 1 event info (touch / event type / hover / palm / event id[0~3])
           Response_Message[0] = 0xA2;
-          finger_two_coord_mapping();
+          finger_two_coord();
           if(bitRead(read_buf[9],7) == 1 & bitRead(read_buf[9],0) == 1)
           {
             Response_Message[0] = 0xB1;
@@ -607,20 +606,20 @@ void Slave_Reception_Callback(void)
         if(read_buf[9] == 0x08 | read_buf[9] == 0x88)
         {
           Response_Message[0] = 0x21;
-          finger_one_coord_mapping();
+          finger_one_coord();
         }
         if(read_buf[15] == 0x08 | read_buf[15] == 0x88)
         {
           //Finger 1 event info (touch / event type / hover / palm / event id[0~3])
           Response_Message[0] = 0x22;
-          finger_two_coord_mapping();
+          finger_two_coord();
         }
         if(two_finger_up_flag == 1)
         {
           two_finger_up_flag = 0;
           Response_Message[0] = 0x21;
           Response_Message[8] = 0x22;
-          both_finger_coord_mapping();
+          both_finger_coord();
         }
       }
       

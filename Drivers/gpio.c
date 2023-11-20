@@ -145,38 +145,38 @@ void GPIOx_Init(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin_x, pinMode_TypeDef pinMod
 
     if(pinMode_x == INPUT)
     {
-			  GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
-			  GPIO_InitStruct.OutputType = LL_GPIO_PULL_NO;
+        GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
+        GPIO_InitStruct.OutputType = LL_GPIO_PULL_NO;
     }
     else if(pinMode_x == INPUT_PULLUP)
     {
-			  GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
-			  GPIO_InitStruct.OutputType = LL_GPIO_PULL_UP;
+        GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
+        GPIO_InitStruct.OutputType = LL_GPIO_PULL_UP;
     }
     else if(pinMode_x == INPUT_PULLDOWN)
     {
-			  GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
-			  GPIO_InitStruct.OutputType = LL_GPIO_PULL_DOWN;
+        GPIO_InitStruct.Mode = LL_GPIO_MODE_INPUT;
+        GPIO_InitStruct.OutputType = LL_GPIO_PULL_DOWN;
     }
     else if(pinMode_x == INPUT_ANALOG)
     {
         GPIO_InitStruct.Mode  = LL_GPIO_MODE_ANALOG;
-			  GPIO_InitStruct.OutputType = LL_GPIO_PULL_NO;
+        GPIO_InitStruct.OutputType = LL_GPIO_PULL_NO;
     }
     else if(pinMode_x == OUTPUT)
     {
-				GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
-			  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+        GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
+        GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
     }
     else if(pinMode_x == OUTPUT_OPEN_DRAIN)
     {
-				GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
-			  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_OPENDRAIN;
+        GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
+        GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_OPENDRAIN;
     }
     else if(pinMode_x == OUTPUT_AF)
     {
-				GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-			  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+        GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
+        GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
     }
 
     GPIO_InitStruct.Pin = GPIO_Pin_x;

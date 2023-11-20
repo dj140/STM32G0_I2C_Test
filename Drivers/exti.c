@@ -66,8 +66,8 @@ void EXTIx_Init(uint8_t Pin, EXTI_CallbackFunction_t function, uint8_t Trigger_M
     EXTI_InitStructure.LineCommand = ENABLE;              //使能中断线
     LL_EXTI_Init(&EXTI_InitStructure);                        //根据EXTI_InitStruct中指定的参数初始化外设EXTI寄存器
      /* EXTI interrupt init*/
-		NVIC_SetPriority(EXTI_GetIRQn(Pin), ChannelPriority);
-		NVIC_EnableIRQ(EXTI_GetIRQn(Pin));
+    NVIC_SetPriority(EXTI_GetIRQn(Pin), ChannelPriority);
+    NVIC_EnableIRQ(EXTI_GetIRQn(Pin));
 
 }
 
