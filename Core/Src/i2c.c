@@ -75,7 +75,7 @@ void MX_I2C1_Init(void)
   */
   LL_I2C_EnableClockStretching(I2C1);
   I2C_InitStruct.PeripheralMode = LL_I2C_MODE_I2C;
-	/* Timing register value is computed with the STM32CubeMX Tool,
+  /* Timing register value is computed with the STM32CubeMX Tool,
   * Fast Mode @400kHz with I2CCLK = 64 MHz,
   * rise time = 100ns, fall time = 10ns
   * Timing Value = (uint32_t)0x00C0216C*/
@@ -103,8 +103,8 @@ void MX_I2C1_Init(void)
   LL_I2C_EnableIT_NACK(I2C1);
 //  LL_I2C_EnableIT_ERR(I2C1);
   LL_I2C_EnableIT_STOP(I2C1);
-	LL_I2C_EnableIT_RX(I2C1);
-	LL_I2C_EnableIT_TX(I2C1);
+  LL_I2C_EnableIT_RX(I2C1);
+  LL_I2C_EnableIT_TX(I2C1);
   /* USER CODE END I2C1_Init 2 */
 
 }

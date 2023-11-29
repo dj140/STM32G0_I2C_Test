@@ -45,8 +45,8 @@ uint8_t  Buffer_Rx_IIC1[16];
 uint8_t Response_Message[16];
 uint8_t  Rx_Idx_IIC1=0;
 uint8_t  Tx_Idx_IIC1=0;
-uint8_t  two_finger_down_flag = 0, two_finger_up_flag = 0;
-uint8_t in_flag = 0, out_flag = 0;
+bool  both_finger_down_flag = 0, both_finger_up_flag = 0, finger_one_up_flag = 0, finger_two_up_flag = 0;
+bool in_flag = 0, out_flag = 0;
 
 /* USER CODE END TD */
 
@@ -305,7 +305,15 @@ void EXTI0_1_IRQHandler(void)
     LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_1);
     /* USER CODE BEGIN LL_EXTI_LINE_1_FALLING */
 //      LL_GPIO_ResetOutputPin(GPIOB,LL_GPIO_PIN_5);
-    NVIC_SystemReset();
+//    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_1, LL_GPIO_MODE_INPUT);
+    delay_us(20);
+    if(digitalRead(PA1) == 0x00)
+    {
+      LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_15, LL_GPIO_PULL_DOWN);
+      digitalWrite(RESET_Pin, LOW);
+      delay_us(50);
+      NVIC_SystemReset();
+    }
     /* USER CODE END LL_EXTI_LINE_1_FALLING */
   }
   /* USER CODE BEGIN EXTI0_1_IRQn 1 */
@@ -504,10 +512,23 @@ void Slave_Reception_Callback(void)
       {
         Response_Message[0] = 0x10;
       }
-      if(two_finger_down_flag == 1 & bitRead(read_buf[9],0) == 0 & bitRead(read_buf[15],0) == 0)
+      //if both finger up at the same time
+      if(both_finger_down_flag == 1 & bitRead(read_buf[9],0) == 0 & bitRead(read_buf[15],0) == 0)
       {
         Response_Message[0] = 0x10;
-        two_finger_up_flag =1;
+        both_finger_up_flag =1;
+      }
+      //if both finger two up but finger one still moving
+      if(both_finger_down_flag == 1 & bitRead(read_buf[9],2) == 1 & bitRead(read_buf[15],0) == 0)
+      {
+        Response_Message[0] = 0x10;
+        finger_two_up_flag =1;
+      }
+      //if both finger one up but finger two still moving
+      if(both_finger_down_flag == 1 & bitRead(read_buf[9],0) == 0 & bitRead(read_buf[15],2) == 1)
+      {
+        Response_Message[0] = 0x10;
+        finger_one_up_flag =1;
       }
     break;
       
@@ -578,7 +599,7 @@ void Slave_Reception_Callback(void)
       // both finger press down
       if(bitRead(read_buf[9],0) == 1 & bitRead(read_buf[15],0) == 1)
       {
-         two_finger_down_flag = 1;
+         both_finger_down_flag = 1;
 
         //Finger 0 event info (touch / event type / hover / palm / event id[0~3])
         Response_Message[0] = 0xA1;
@@ -599,8 +620,8 @@ void Slave_Reception_Callback(void)
             Response_Message[8] = 0xB2;
           }
         }
-      } else two_finger_down_flag = 0;
-      
+      } else both_finger_down_flag = 0;
+      //report finger up status
       if(bitRead(read_buf[0],0) == 1 & bitRead(read_buf[0],3) == 1)
       {
         if(read_buf[9] == 0x08 | read_buf[9] == 0x88)
@@ -610,14 +631,27 @@ void Slave_Reception_Callback(void)
         }
         if(read_buf[15] == 0x08 | read_buf[15] == 0x88)
         {
-          //Finger 1 event info (touch / event type / hover / palm / event id[0~3])
           Response_Message[0] = 0x22;
           finger_two_coord();
         }
-        if(two_finger_up_flag == 1)
+        if(both_finger_up_flag == 1)
         {
-          two_finger_up_flag = 0;
+          both_finger_up_flag = 0;
           Response_Message[0] = 0x21;
+          Response_Message[8] = 0x22;
+          both_finger_coord();
+        }
+        if(finger_one_up_flag == 1)
+        {
+          finger_one_up_flag = 0;
+          Response_Message[0] = 0x21;
+          Response_Message[8] = 0xA2;
+          both_finger_coord();
+        }
+        if(finger_two_up_flag == 1)
+        {
+          finger_two_up_flag = 0;
+          Response_Message[0] = 0xA1;
           Response_Message[8] = 0x22;
           both_finger_coord();
         }
@@ -665,8 +699,10 @@ void Slave_Complete_Callback(void)
 void Error_Callback(void)
 {
   /* Disable I2C1_IRQn */
-  Serial2.println("I2C Salve Communication ERROR !!!!!");		
-  Serial2.println("Please restart the system !!!!!");		
+#ifdef ENABLE_LOGGING
+  Serial2.println("I2C Salve Communication ERROR !!!!!");
+  Serial2.println("Please restart the system !!!!!");
+#endif
   NVIC_DisableIRQ(I2C1_IRQn);
   NVIC_SystemReset();
 }

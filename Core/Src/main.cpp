@@ -87,7 +87,7 @@ void SystemClock_Config(void);
 void ZT7548_init()
 {
   digitalWrite(RESET_Pin, HIGH);
-  delay(2);
+  LL_mDelay(2);
   //digitalWrite(RESET_Pin, LOW);
   //delay(100);
   //digitalWrite(RESET_Pin, HIGH);
@@ -114,12 +114,12 @@ void ZT7548_init()
   cmd_buf[0] = 0x01;
   cmd_buf[1] = 0x00;
   I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0xC002, cmd_buf, 2);
-  delay(2);
+  LL_mDelay(2);
 
   cmd_buf[0] = 0x01;
   cmd_buf[1] = 0x00;
   I2C_write_reg(I2C2, ZT7548_SLAVE_ADDR, 0xC001, cmd_buf, 2);
-  delay(50);
+  LL_mDelay(50);
 
   //cmd_buf[0] = 0x0A;
   //cmd_buf[1] = 0x00;
@@ -190,8 +190,9 @@ void ZT7548_init()
   ZT7548.endTransmission(); 
   delay(10);
 #endif
-
+#ifdef ENABLE_LOGGING
 Serial2.println("ZT7548 initial succeed");
+#endif
 
 }
 /**
@@ -235,9 +236,11 @@ int main(void)
   MX_I2C1_Init();
   //I2C master init
   MX_I2C2_Init();
-
+#ifdef ENABLE_LOGGING
   Serial2.begin(115200);
   Serial2.println("Serial printing...");
+#endif
+
   //watchdog init
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
@@ -320,8 +323,10 @@ void Error_Handler(void)
   //  while (1)
   //  {
   //  }
+#ifdef ENABLE_LOGGING
   Serial2.println("ZT7548 Communication ERROR !!!!!");
   Serial2.println("Please restart the system !!!!!");
+#endif
   NVIC_SystemReset();
   /* USER CODE END Error_Handler_Debug */
 }
