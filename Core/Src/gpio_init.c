@@ -72,7 +72,10 @@ void MX_GPIO_Init(void)
   EXTI_InitStruct.Mode = LL_EXTI_MODE_IT;
   EXTI_InitStruct.Trigger = LL_EXTI_TRIGGER_FALLING;
   LL_EXTI_Init(&EXTI_InitStruct);
-
+  
+  //pull INTR pin high
+  LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_5, LL_GPIO_MODE_OUTPUT);
+  LL_GPIO_SetOutputPin(GPIOB,LL_GPIO_PIN_5);
   /**/
   LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_1, LL_GPIO_PULL_NO);
 
@@ -85,11 +88,6 @@ void MX_GPIO_Init(void)
   /**/
   LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_4, LL_GPIO_MODE_INPUT);
 
-  /* EXTI interrupt init*/
-  NVIC_SetPriority(EXTI0_1_IRQn, 0);
-  NVIC_EnableIRQ(EXTI0_1_IRQn);
-  NVIC_SetPriority(EXTI4_15_IRQn, 1);
-  NVIC_EnableIRQ(EXTI4_15_IRQn);
 
   /**/
   //Set all unuse pin to analog for Reduce power consumption

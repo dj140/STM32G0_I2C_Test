@@ -45,6 +45,7 @@ uint8_t  Buffer_Rx_IIC1[16];
 uint8_t Response_Message[16];
 uint8_t  Rx_Idx_IIC1=0;
 uint8_t  Tx_Idx_IIC1=0;
+uint16_t start_x = 0, start_y = 0, start_distance = 0, end_distance = 0;
 bool  both_finger_down_flag = 0, both_finger_up_flag = 0, finger_one_up_flag = 0, finger_two_up_flag = 0;
 bool in_flag = 0, out_flag = 0;
 
@@ -307,11 +308,12 @@ void EXTI0_1_IRQHandler(void)
 //      LL_GPIO_ResetOutputPin(GPIOB,LL_GPIO_PIN_5);
 //    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_1, LL_GPIO_MODE_INPUT);
     delay_us(20);
-    if(digitalRead(PA1) == 0x00)
+    if(digitalRead(CE_Pin) == 0x00)
     {
-      LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_15, LL_GPIO_PULL_DOWN);
+//      LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_15, LL_GPIO_PULL_DOWN);
       digitalWrite(RESET_Pin, LOW);
-      delay_us(50);
+//      digitalWrite(INT_Output_Pin, LOW);
+      delay_us(100);
       NVIC_SystemReset();
     }
     /* USER CODE END LL_EXTI_LINE_1_FALLING */

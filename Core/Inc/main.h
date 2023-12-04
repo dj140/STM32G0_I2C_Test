@@ -63,6 +63,7 @@ extern "C" {
 #define RESET_Pin PA15
 #define INT_Output_Pin PB5
 #define INTn_ZT7548 PB4
+#define CE_Pin PA1
 
 typedef struct
 {
@@ -90,9 +91,7 @@ typedef struct
 
 extern Melfas_coord Melfas[];
 extern Zinitix_coord Zinitix[];
-
 extern uint8_t read_buf[16];
-static int16_t start_x = 0, start_y = 0, end_x = 0, end_y = 0, start_distance = 0, end_distance = 0;
 
 
 /* USER CODE END Includes */

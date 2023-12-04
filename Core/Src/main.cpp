@@ -86,7 +86,11 @@ void SystemClock_Config(void);
 
 void ZT7548_init()
 {
-  digitalWrite(RESET_Pin, HIGH);
+  //RESET_PIN high
+  LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_15, LL_GPIO_MODE_OUTPUT);
+  LL_GPIO_SetOutputPin(GPIOA,LL_GPIO_PIN_15);
+//  pinMode(RESET_Pin, OUTPUT);
+//  digitalWrite(RESET_Pin, HIGH);
   LL_mDelay(2);
   //digitalWrite(RESET_Pin, LOW);
   //delay(100);
@@ -224,12 +228,7 @@ int main(void)
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
-//  pinMode(INT_Output_Pin, OUTPUT);
-//  digitalWrite(INT_Output_Pin, HIGH);
-  //pull INTR pin high
-  LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOB);
-  LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_5, LL_GPIO_MODE_OUTPUT);
-  LL_GPIO_SetOutputPin(GPIOB,LL_GPIO_PIN_5);
+  MX_GPIO_Init();
 
   /* Initialize all configured peripherals */
   //I2C slave init
@@ -244,11 +243,14 @@ int main(void)
   //watchdog init
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
-  pinMode(RESET_Pin, OUTPUT);
   //pinMode(INTn_ZT7548, INPUT_PULLUP);
   //attachInterrupt(INTn_ZT7548, LED_Toogle, FALLING);
   ZT7548_init();
-  MX_GPIO_Init();
+  /* EXTI interrupt init*/
+  NVIC_SetPriority(EXTI0_1_IRQn, 0);
+  NVIC_EnableIRQ(EXTI0_1_IRQn);
+  NVIC_SetPriority(EXTI4_15_IRQn, 1);
+  NVIC_EnableIRQ(EXTI4_15_IRQn);
 
 
   /* USER CODE END 2 */
