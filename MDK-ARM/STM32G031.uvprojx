@@ -423,6 +423,11 @@
               <FileType>1</FileType>
               <FilePath>..\Core\Src\gpio_init.c</FilePath>
             </File>
+            <File>
+              <FileName>ZT7548.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Core\Src\ZT7548.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

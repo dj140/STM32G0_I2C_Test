@@ -14,6 +14,13 @@
  * GNU General Public License for more details.
  *
  */
+ #ifndef __ZT7548_H__
+#define  __ZT7548_H__
+
+ #ifdef __cplusplus
+extern "C" {
+#endif
+  
 #include "stdlib.h"
 #include "stdbool.h"
 
@@ -25,12 +32,12 @@
 /* for run_read_all in factory cmd */
 typedef void (*run_func_t)(void *);
 enum data_type {
-	DATA_UNSIGNED_CHAR,
-	DATA_SIGNED_CHAR,
-	DATA_UNSIGNED_SHORT,
-	DATA_SIGNED_SHORT,
-	DATA_UNSIGNED_INT,
-	DATA_SIGNED_INT,
+  DATA_UNSIGNED_CHAR,
+  DATA_SIGNED_CHAR,
+  DATA_UNSIGNED_SHORT,
+  DATA_SIGNED_SHORT,
+  DATA_UNSIGNED_INT,
+  DATA_SIGNED_INT,
 };
 
 #ifdef CONFIG_SEC_FACTORY
@@ -89,7 +96,7 @@ enum data_type {
 #define	SEC_MUTUAL_AMP_V_SEL	0x0232
 
 #define	CHIP_ON_DELAY			200	/*ms*/
-#define FIRMWARE_ON_DELAY		150	/*ms*/
+#define FIRMWARE_ON_DELAY		50	/*ms*/
 #define	SEC_DND_N_COUNT			15
 #define	SEC_DND_U_COUNT			18
 #define	SEC_DND_FREQUENCY		169
@@ -271,17 +278,10 @@ enum data_type {
 #define zinitix_swap_v(a, b, t)		((t) = (a), (a) = (b), (b) = (t))
 #define zinitix_swap_16(s)		(((((s) & 0xff) << 8) | (((s) >> 8) & 0xff)))
 
-#ifdef SEC_FACTORY_TEST
-/* Touch Screen */
-#define TSP_CMD_STR_LEN		32
-#define TSP_CMD_RESULT_STR_LEN	4096
-#define TSP_CMD_PARAM_NUM	8
-#define TSP_CMD_Y_NUM		18
-#define TSP_CMD_X_NUM		30
-#define TSP_CMD_NODE_NUM	(TSP_CMD_Y_NUM * TSP_CMD_X_NUM)
-#define REG_EDGE_XF_OFFSET      0xEC
-#define REG_EDGE_XL_OFFSET      0xED
-#define REG_EDGE_YF_OFFSET      0xEE
-#define REG_EDGE_YL_OFFSET      0xEF
+void ZT7548_init(void);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* __ZT7548_H__ */

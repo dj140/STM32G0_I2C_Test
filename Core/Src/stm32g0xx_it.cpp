@@ -49,39 +49,6 @@ uint16_t start_x = 0, start_y = 0, start_distance = 0, end_distance = 0;
 bool  both_finger_down_flag = 0, both_finger_up_flag = 0, finger_one_up_flag = 0, finger_two_up_flag = 0;
 bool in_flag = 0, out_flag = 0;
 
-/* USER CODE END TD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
-/* External variables --------------------------------------------------------*/
-
-/* USER CODE BEGIN EV */
-
-/* USER CODE END EV */
-
 /******************************************************************************/
 /*           Cortex-M0+ Processor Interruption and Exception Handlers          */
 /******************************************************************************/
@@ -143,22 +110,9 @@ void PendSV_Handler(void)
 }
 
 /**
-  * @brief This function handles System tick timer.
-  */
-//void SysTick_Handler(void)
-//{
-//  /* USER CODE BEGIN SysTick_IRQn 0 */
-
-//  /* USER CODE END SysTick_IRQn 0 */
-
-//  /* USER CODE BEGIN SysTick_IRQn 1 */
-
-//  /* USER CODE END SysTick_IRQn 1 */
-//}
-/**
   * @brief This function handles EXTI line 4 to 15 interrupts.
   */
-void ZT7548_INT()
+void ZT7548_interrupt_handler()
 {
 
 #ifdef HW_i2C
@@ -275,20 +229,12 @@ digitalWrite(INT_Output_Pin, LOW);
 
 void EXTI4_15_IRQHandler(void)
 {
-  /* USER CODE BEGIN EXTI4_15_IRQn 0 */
-
-  /* USER CODE END EXTI4_15_IRQn 0 */
   if (LL_EXTI_IsActiveFallingFlag_0_31(LL_EXTI_LINE_4) != RESET)
   {
     LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_4);
-    /* USER CODE BEGIN LL_EXTI_LINE_15_RISING */
-    ZT7548_INT(); 
-    /* USER CODE END LL_EXTI_LINE_15_RISING */
+    ZT7548_interrupt_handler(); 
   }
-  /* USER CODE BEGIN EXTI4_15_IRQn 1 */
 
-
-  /* USER CODE END EXTI4_15_IRQn 1 */
 }
 
 
@@ -298,29 +244,27 @@ void EXTI4_15_IRQHandler(void)
 
 void EXTI0_1_IRQHandler(void)
 {
-  /* USER CODE BEGIN EXTI0_1_IRQn 0 */
 
-  /* USER CODE END EXTI0_1_IRQn 0 */
   if (LL_EXTI_IsActiveFallingFlag_0_31(LL_EXTI_LINE_1) != RESET)
   {
     LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_1);
-    /* USER CODE BEGIN LL_EXTI_LINE_1_FALLING */
-//      LL_GPIO_ResetOutputPin(GPIOB,LL_GPIO_PIN_5);
-//    LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_1, LL_GPIO_MODE_INPUT);
     delay_us(20);
-    if(digitalRead(CE_Pin) == 0x00)
+    if(digitalRead(CE_Pin) == LOW)
     {
-//      LL_GPIO_SetPinPull(GPIOA, LL_GPIO_PIN_15, LL_GPIO_PULL_DOWN);
-      digitalWrite(RESET_Pin, LOW);
-//      digitalWrite(INT_Output_Pin, LOW);
-      delay_us(100);
-      NVIC_SystemReset();
+      NVIC_DisableIRQ(EXTI4_15_IRQn);
+      digitalWrite(INT_Output_Pin, HIGH);
     }
-    /* USER CODE END LL_EXTI_LINE_1_FALLING */
   }
-  /* USER CODE BEGIN EXTI0_1_IRQn 1 */
+  if (LL_EXTI_IsActiveRisingFlag_0_31(LL_EXTI_LINE_1) != RESET)
+  {
+    LL_EXTI_ClearRisingFlag_0_31(LL_EXTI_LINE_1);
+    delay_us(20);
+    if(digitalRead(CE_Pin) == HIGH)
+    {
+      NVIC_EnableIRQ(EXTI4_15_IRQn);
+    }
+  }
 
-  /* USER CODE END EXTI0_1_IRQn 1 */
 }
 
 /******************************************************************************/
