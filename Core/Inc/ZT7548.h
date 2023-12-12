@@ -279,6 +279,7 @@ enum data_type {
 #define zinitix_swap_16(s)		(((((s) & 0xff) << 8) | (((s) >> 8) & 0xff)))
 
 void ZT7548_init(void);
+void ZT7548_reset(void);
 
 #ifdef __cplusplus
 }

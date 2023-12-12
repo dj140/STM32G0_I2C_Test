@@ -250,7 +250,11 @@ void EXTI0_1_IRQHandler(void)
     LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_1);
     delay_us(20);
     if(digitalRead(CE_Pin) == LOW)
-    {
+    {  
+      ZT7548_reset();
+      LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_4);
+      LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_1);
+      NVIC_DisableIRQ(I2C1_IRQn);
       NVIC_DisableIRQ(EXTI4_15_IRQn);
       digitalWrite(INT_Output_Pin, HIGH);
     }
@@ -261,6 +265,7 @@ void EXTI0_1_IRQHandler(void)
     delay_us(20);
     if(digitalRead(CE_Pin) == HIGH)
     {
+      NVIC_EnableIRQ(I2C1_IRQn);
       NVIC_EnableIRQ(EXTI4_15_IRQn);
     }
   }
@@ -515,6 +520,24 @@ void Slave_Reception_Callback(void)
       Response_Message[0] = 0x82;
     break;
     case 0xE3:  
+      Response_Message[0] = 0x07;
+    break;
+    case 0xF0:  
+      Response_Message[0] = 0x04;
+    break;
+    case 0xF1:  
+      Response_Message[0] = 0x45;
+    break;
+    case 0xF2:  
+      Response_Message[0] = 0x45;
+    break;
+    case 0xF3:  
+      Response_Message[0] = 0x07;
+    break;
+    case 0xF4:  
+      Response_Message[0] = 0x07;
+    break;
+    case 0xF5:  
       Response_Message[0] = 0x07;
     break;
     
